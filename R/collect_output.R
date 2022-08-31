@@ -2,11 +2,7 @@
 #'
 #' Collects the output files data and parameter files from a rhessys run and auto-generates a folder to place them in
 #' @import data.table
-#' @import tidyverse
-#' @import cowplot
-#' @import zoo
-#' @import stringr
-#' @import png
+#' @import ggplot2
 
 collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output") {
   # check that output folder exists
