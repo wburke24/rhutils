@@ -11,7 +11,7 @@ write_param_table = function(input_def_pars) {
 #' @export
 get_param_table = function(input_def_pars) {
   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
-  if (length(input_def_pars[[1]][3]) == 1) {
+  if (length(input_def_pars[[1]][[3]]) == 1) {
     param_table = cbind(vars_defs, sapply(input_def_pars, "[[", 3))
   } else {
     param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))

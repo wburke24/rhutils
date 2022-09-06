@@ -12,12 +12,13 @@ g_legend<-function(a.gplot){
 # }
 
 
-
-
 # aggregates to basin monthly for now
 #' @export
-plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "_basin.csv", aggvars = c("year","month")) {
+plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "basin", aggvars = c("year","month")) {
   files_in = list.files(path = out_dir, pattern = pattern, full.names = T)
+  if (length(files_in) == 0) {
+    stop("No files found at specified output directory '",out_dir,"' using pattern '",pattern,"'")
+  }
   names = gsub(pattern = pattern, "",basename(files_in))
   DT_l = lapply(files_in, fread)
   vars = names(DT_l[[1]])[!names(DT_l[[1]]) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "sID", "run")]
@@ -29,14 +30,18 @@ plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "_basi
   pdfname = file.path("plots", paste0(gsub(".pdf","", out_name), gsub( ":", ".", sub( " ", "_", Sys.time())), ".pdf"  ))
   pdf(pdfname)
   for (i in seq_along(vars)) {
-    tmpplot = DT %>% ggplot() +
-      aes(x = year_month, color = as.factor(run), linetype =as.factor(run)) +
+    tmpplot = ggplot(DT) +
+      aes(x = year_month,
+          color = as.factor(run),
+          linetype = as.factor(run)) +
       aes_string(y = vars[i]) +
       geom_line() +
       ggtitle(vars[i])
     plot(tmpplot)
   }
-  dev.off()
+  suppressMessages(dev.off())
+
+  cat("Wrote plots to PDF file: ",pdfname)
 }
 
 

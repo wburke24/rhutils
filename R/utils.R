@@ -1,5 +1,9 @@
 # General and miscellaneous utilities
 
+# TODO
+# check_template
+
+
 # copy a source world redefine file and rename it using a specified date
 #' @export
 tec_copy_redef = function(input_redef, redef_date, worldfile, overwrite = F) {
