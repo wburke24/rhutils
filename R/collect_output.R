@@ -29,6 +29,19 @@ collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = 
     } else {
       cat("No param files to move at specified directory.\n")
     }
+    # run metadata
+    runmeta = list.files(path = output_dir, pattern = "run_metadata_.*\\.txt")
+    if (length(runmeta) > 1) {
+      cat("Multiple metadata files found")
+      dtstr = gsub(".txt","", gsub("run_metadata_","",runmeta))
+      datetime = as.POSIXct(dtstr, format = "%Y-%m-%d--%H-%M-%OS")
+      runmeta = runmeta[which.max(datetime)]
+    }
+    if (length(runmeta) == 1) {
+      shh = file.rename(from = file.path(source_dir, output_dir, runmeta), to = file.path(source_dir, output_dir, dirname,runmeta))
+      cat("Moved RHESSys run metadata files to new directory\n")
+    }
+
     # moves csvs
     if (length(csv_files) > 0) {
       shh = file.rename(from = file.path(source_dir, output_dir, csv_files), to = file.path(source_dir, output_dir, dirname,csv_files))

@@ -41,6 +41,13 @@ defpar_rm_dup = function(def_list) {
   return(def_list)
 }
 
+# fill pars with repeats based on max number of pars
+#' @export
+fill_rep_pars = function(pars_list) {
+  npars = sapply(pars_list, function(X) {length(X[[3]])})
+  fillpars = lapply(pars_list, function(X, Y) {if (length(X[[3]]) < Y){X[[3]] = rep_len(X[[3]], Y)}; return(X) }, max(npars))
+}
+
 # mean of n def pars
 #' @export
 defpar_mean = function(X) {
