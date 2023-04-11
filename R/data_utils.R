@@ -3,6 +3,9 @@
 #' @export
 get_basin_daily = function(out_dir) {
   basin_files_in = list.files(path = out_dir, pattern = ".*_basin.*\\.csv$", full.names = T)
+  if (length(basin_files_in) == 0) {
+    basin_files_in = list.files(path = out_dir, pattern = ".*\\.csv$", full.names = T)
+  }
   run_names = gsub("_basin", "", gsub(".csv", "", basename(basin_files_in)))
   basin_daily_list = lapply(basin_files_in, fread)
   basin_daily_list = mapply(function(X,Y) {X$run = Y;return(X)} , basin_daily_list, run_names, SIMPLIFY = F)

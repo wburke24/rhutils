@@ -3,6 +3,19 @@
 # TODO
 # check_template
 
+# text and sound alert, inside of collect output
+#' @export
+sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
+  # txt = "\t\t\tSimulations Complete\t\t\t"
+  # 0:255
+  # fg = 46
+  # bg = 24
+  w = getOption("width") + 4
+  pad = paste0(rep(" ",(w - nchar(txt))/2),collapse = "")
+  cat(paste0("\033[38;5;",fg,";48;5;",bg,"m",pad,txt,pad,"\033[0m","\n"))
+  beepr::beep(2)
+}
+
 
 # copy a source world redefine file and rename it using a specified date
 #' @export

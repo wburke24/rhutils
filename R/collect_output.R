@@ -5,7 +5,7 @@
 #' @import ggplot2
 #' @export
 
-collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output") {
+collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", alert = T) {
   # check that output folder exists
   if (!dir.exists(output_dir)) {
     stop ("Destination path '",output_dir,"' does not exist.")
@@ -52,6 +52,11 @@ collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = 
     }
 
   }
+
+  if (alert) {
+    sim_alert()
+  }
+
 
 }
 
