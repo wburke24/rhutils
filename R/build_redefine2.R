@@ -25,7 +25,7 @@ build_redefine2 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     read_world = worldfile
   }
 
-  world = RHESSysPreprocessing::read_world(world_path)
+  # world = RHESSysPreprocessing::read_world(world_path)
 
   world =  strsplit(trimws(read_world), "\\s+")
   world = data.frame(matrix(unlist(world), nrow = length(world), byrow = T), stringsAsFactors = FALSE)
@@ -98,11 +98,13 @@ build_redefine2 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   }
 
   # ---------- Find and Replace Vars ----------
-  replace_index = NULL
+  replace_index_all = NULL
   if (!is.null(vars) & !is.null(values)) {
     if (length(vars) > 1 & length(values) == 1) {
       values = rep.int(values, length(vars))
     }
+
+    replace_index_all = which(world$vars %in% vars)
 
     for (i in 1:length(vars)) {
 
@@ -124,7 +126,7 @@ build_redefine2 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   }
 
 
-  if ( (is.null(redef_index) || all(!redef_index)) & (is.null(replace_index) || all(!replace_index)) ) {
+  if ( (is.null(redef_index) || all(!redef_index)) & (is.null(replace_index_all) || all(!replace_index_all)) ) {
     cat("No vars matched criteria, all set to -9999.\n")
   }
 
@@ -153,7 +155,7 @@ build_redefine2 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     "canopy_strata_n_basestations",
     "canopy_strata_basestation_ID"
   )
-  keep_index = c(unique(redef_index, replace_index), which(world$vars %in% keep_vars))
+  keep_index = c(unique(c(redef_index, replace_index_all)), which(world$vars %in% keep_vars))
   no_change_vars = c(1:length(read_world))[-keep_index]
   no_change_value = world$values[no_change_vars]
 

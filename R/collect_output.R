@@ -8,7 +8,7 @@
 collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", alert = T) {
   # check that output folder exists
   if (!dir.exists(output_dir)) {
-    stop ("Destination path '",output_dir,"' does not exist.")
+    stop("Destination path '",output_dir,"' does not exist.")
   }
   # find csv and param files
   csv_files = list.files(path = output_dir, pattern = "*\\.csv")
@@ -46,17 +46,15 @@ collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = 
     if (length(csv_files) > 0) {
       shh = file.rename(from = file.path(source_dir, output_dir, csv_files), to = file.path(source_dir, output_dir, dirname,csv_files))
       cat("Moved RHESSys output files to new directory.\n")
+      if (alert) {
+        sim_alert()
+      }
       return(file.path(source_dir, output_dir, dirname))
     } else {
       cat("No csvs at specified directory.\n")
     }
 
   }
-
-  if (alert) {
-    sim_alert()
-  }
-
 
 }
 

@@ -4,7 +4,12 @@
 \alias{collect_output}
 \title{collect_output}
 \usage{
-collect_output(source_dir = "./", basename = "rh_out_", output_dir = "output")
+collect_output(
+  source_dir = "./",
+  basename = "rh_out_",
+  output_dir = "output",
+  alert = T
+)
 }
 \description{
 Collects the output files data and parameter files from a rhessys run and auto-generates a folder to place them in

@@ -3,6 +3,22 @@
 # TODO
 # check_template
 
+
+# readpars = read.csv("output/rh_out_2022-12-08--09-39-06/params/all_def_changes_2022-12-08_09.39.06.params",)
+# table2list = function(X, Y) {
+#   value = unname(X[names(X)==Y])
+#   if (!is.na(suppressWarnings(as.numeric(value)))) {
+#     value = as.numeric(value)
+#   }
+#   out = list(unname(X["def_file"]), unname(X["variable"]), value)
+#   return(out)
+# }
+# inputdefsread = apply(readpars,MARGIN = 1, FUN = table2list, "run_60")
+#
+# dput(inputdefsread)
+
+
+
 # text and sound alert, inside of collect output
 #' @export
 sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
@@ -15,7 +31,6 @@ sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
   cat(paste0("\033[38;5;",fg,";48;5;",bg,"m",pad,txt,pad,"\033[0m","\n"))
   beepr::beep(2)
 }
-
 
 # copy a source world redefine file and rename it using a specified date
 #' @export
@@ -52,15 +67,6 @@ worldstate = function(worldfile) {
   }
 }
 
-#' @export
-daily_dates = function(X, Y) {
-  out = X
-  out$run = Y
-  out$year_month = zoo::as.yearmon(paste0(out$year,"-", out$month))
-  out$ym_ind = as.numeric(out$year_month)
-  return(out)
-}
-
 # water balance for multiple basin outputs using output filters
 #' @export
 watbal_basin_of_multi = function(out_dir) {
@@ -78,14 +84,14 @@ watbal_basin_of_multi = function(out_dir) {
 }
 
 # IDK WTF this is - autogen subset and output text
-get_fixed_vars = function(DT) {
-  isf = which(unname(sapply(DT, is.factor)))
-  un = sapply(DT[ , ..isf ], FUN = unique )
-  isun = sapply(un, FUN = function(X) length(X) == 1 )
-  res = sapply(un[isun], as.character)
-  out = paste(names(res), res, collapse = " | ",sep = ":")
-  return(out)
-}
+# get_fixed_vars = function(DT) {
+#   isf = which(unname(sapply(DT, is.factor)))
+#   un = sapply(DT[ , ..isf ], FUN = unique )
+#   isun = sapply(un, FUN = function(X) length(X) == 1 )
+#   res = sapply(un[isun], as.character)
+#   out = paste(names(res), res, collapse = " | ",sep = ":")
+#   return(out)
+# }
 
 
 

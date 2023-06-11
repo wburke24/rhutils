@@ -15,6 +15,15 @@ wy_range = function(dates) {
   return(date_out)
 }
 
+#' @export
+daily_dates = function(X, Y) {
+  out = X
+  out$run = Y
+  out$year_month = zoo::as.yearmon(paste0(out$year,"-", out$month))
+  out$ym_ind = as.numeric(out$year_month)
+  return(out)
+}
+
 # date2rhdate = function(date_in) {
 #   if(class(date_in) == "Date") {
 #     date_out = paste0(format(date_in, "%Y %m %d"), " 01")

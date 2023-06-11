@@ -1,6 +1,18 @@
 # def pars utils
 
 #' @export
+read_def = function(def_file) {
+  def_read = readLines(def_file, warn = FALSE)
+  def_read = def_read[nchar(def_read) > 0]
+  def_table_list =  strsplit(trimws(def_read), "\\s+")
+  def_table <- as.data.frame(do.call(rbind, lapply(def_table_list, `length<-`, 2)), stringsAsFactors = FALSE)
+  names(def_table)[1:2] = c("pars", "names")
+  comments = lapply(def_table_list, function(x)ifelse(length(x) > 2, paste(x[3:length(x)], collapse = " "), NA ) )
+  def_table_out = data.frame(def_table, comments = unlist(comments))
+  return(def_table_out)
+}
+
+#' @export
 write_param_table = function(input_def_pars) {
   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
   param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
@@ -144,10 +156,22 @@ def_par_allcomb = function(defpars) {
     cat("No pars to combine")
     return(defpars)
   }
-  pars_mult = sapply(defpars[npars>1], "[[", 3)
-  pars_comb = expand.grid(as.list(unname(data.frame(pars_mult))))
+  pars_mult = lapply(defpars[npars>1], "[[", 3)
+  #pars_comb = expand.grid(as.list(unname(data.frame(pars_mult))))
+  pars_comb = expand.grid(pars_mult)
   defpars[npars>1] = mapply(function(X, Y) {X[[3]] = Y; return(X)}, defpars[npars>1], pars_comb, SIMPLIFY = F)
   defpars[npars==1] = lapply(pars_list[npars==1], function(X, Y) {X[[3]] = rep.int(X[[3]], Y); return(X)}, length(pars_comb[[1]]))
   cat("Output def pars length: ", length(pars_comb[[1]]))
   return(defpars)
 }
+
+#' @export
+get_changed_inputpars = function(out_dir) {
+  inputpars = read.csv(list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T ))
+  if (names(inputpars)[1] == "X") {
+    inputpars = inputpars[,-1]
+  }
+  return(inputpars)
+}
+
+
