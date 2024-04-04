@@ -1,5 +1,6 @@
 # data reading and aggregation utils
 
+# ================================================================================
 #' @export
 get_basin_daily = function(out_dir) {
   basin_files_in = list.files(path = out_dir, pattern = ".*_basin.*\\.csv$", full.names = T)
@@ -14,6 +15,7 @@ get_basin_daily = function(out_dir) {
   return(basin_daily_dt)
 }
 
+# ================================================================================
 #' @export
 basin_daily2mn = function(basin_daily) {
   vars_in_basin = names(basin_daily)[!names(basin_daily) %in% c("day", "month", "year", "basinID", "date", "wy", "yd", "run")]
@@ -23,6 +25,7 @@ basin_daily2mn = function(basin_daily) {
   return(basin_mn)
 }
 
+# ================================================================================
 #' @export
 basin_output_fixes = function(DT) {
   DT$date = lubridate::ymd(paste(DT$year, DT$month, DT$day, sep = "-"))
@@ -32,6 +35,7 @@ basin_output_fixes = function(DT) {
   return(DT)
 }
 
+# ================================================================================
 # AGGREGATION TO BE LAPPLY'D ACROSS OUTPUTS
 #' @export
 agg_dyn = function(DT, name, aggvars, vars) {
@@ -42,6 +46,7 @@ agg_dyn = function(DT, name, aggvars, vars) {
   return(out)
 }
 
+# ================================================================================
 #' @export
 agg_YM = function(X, Y) {
   out = X[, lapply(.SD, mean), by=c("year", "month"), .SDcols = vars]
@@ -51,6 +56,7 @@ agg_YM = function(X, Y) {
   return(out)
 }
 
+# ================================================================================
 #' @export
 agg_YM_strata = function(X, Y) {
   X[, sID := stratumID %% 10]
@@ -61,7 +67,7 @@ agg_YM_strata = function(X, Y) {
   return(out)
 }
 
-
+# ================================================================================
 # # group things
 # mean2sim = function(DT, scenarios) {
 #   DT_mn = DT[, .(mean(value)), by = c("run")]

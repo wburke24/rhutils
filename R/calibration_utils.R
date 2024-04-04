@@ -1,12 +1,13 @@
 # Calibration utilities
 
+# ================================================================================
 #' @export
-cal_eval = function(out_dir, Qobs, monthly = F) {
+cal_eval = function(sim_DT, Qobs, monthly = F) {
   if (!"Flow_mmd" %in% names(Qobs)) {
     cat("Observed streamflow needs column named 'Flow_mmd'")
     return(NULL)
   }
-  sim_DT = get_basin_daily(out_dir)
+
   if (!"streamflow" %in% names(sim_DT)) {
     cat("Simulated data missing 'streamflow' output")
     return(NULL)
@@ -51,9 +52,10 @@ cal_eval = function(out_dir, Qobs, monthly = F) {
   return(eval_df)
 }
 
+# ================================================================================
 #' @export
 def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
-  inputpars = get_changed_inputpars(out_dir)
+  inputpars = read_pars_table(out_dir)
   if (stat == "NSE") {
     tmp = cbind(inputpars[,c(1,2)], inputpars[,-c(1,2)][,order(eval$NSE, decreasing = T)])
     chgvars = tmp[ apply(tmp[,-c(1,2)],1,FUN = function(X){length(unique(X))}) > 1, ]
@@ -65,6 +67,7 @@ def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
   return(chgvars_stat)
 }
 
+# ================================================================================
 #' @export
 pars_sens = function(out_dir, eval) {
   inputpars = get_changed_inputpars(out_dir)

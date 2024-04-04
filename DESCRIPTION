@@ -1,7 +1,7 @@
 Package: rhutils
 Type: Package
 Title: Utilities for RHESSys and general coding.
-Version: 0.1.0
+Version: 0.2.0
 Author: Will Burke
 Maintainer: Will Burke <burke24@gmail.com>
 Description: Functions for use with RHESSys inputs and outputs. 
@@ -9,7 +9,7 @@ Description: Functions for use with RHESSys inputs and outputs.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Depends:
   RHESSysIOinR,
   RHESSysPreprocessing,

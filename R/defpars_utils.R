@@ -1,5 +1,5 @@
 # def pars utils
-
+# ================================================================================
 #' @export
 read_def = function(def_file) {
   def_read = readLines(def_file, warn = FALSE)
@@ -12,6 +12,7 @@ read_def = function(def_file) {
   return(def_table_out)
 }
 
+# ================================================================================
 #' @export
 write_param_table = function(input_def_pars) {
   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
@@ -20,6 +21,7 @@ write_param_table = function(input_def_pars) {
   write.csv(param_table, file = paste0("all_def_changes_" ,gsub( ":", ".", sub( " ", "_", Sys.time())), ".params"  ) )
 }
 
+# ================================================================================
 #' @export
 get_param_table = function(input_def_pars) {
   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
@@ -32,6 +34,7 @@ get_param_table = function(input_def_pars) {
   return(param_table)
 }
 
+# ================================================================================
 #' @export
 copy_param_by_var = function(pars, copy_var, replace_var) {
   tmp = pars[[which(lapply(pars,"[[",2 ) == copy_var)]]
@@ -44,6 +47,7 @@ copy_param_by_var = function(pars, copy_var, replace_var) {
   return(pars)
 }
 
+# ================================================================================
 # remove duplicate def list entry
 #' @export
 defpar_rm_dup = function(def_list) {
@@ -53,6 +57,7 @@ defpar_rm_dup = function(def_list) {
   return(def_list)
 }
 
+# ================================================================================
 # fill pars with repeats based on max number of pars
 #' @export
 fill_rep_pars = function(pars_list) {
@@ -60,6 +65,7 @@ fill_rep_pars = function(pars_list) {
   fillpars = lapply(pars_list, function(X, Y) {if (length(X[[3]]) < Y){X[[3]] = rep_len(X[[3]], Y)}; return(X) }, max(npars))
 }
 
+# ================================================================================
 # mean of n def pars
 #' @export
 defpar_mean = function(X) {
@@ -71,13 +77,14 @@ defpar_mean = function(X) {
   return(X)
 }
 
-
+# ================================================================================
 # get_def_table = function(def_pars_list) {
 #   df = unname(as.data.frame(lapply(def_pars_list, "[[", 3)))
 #   names(df) = sapply(def_pars_list, function(X) {paste0(X[[1]],"_",X[[2]])})
 #   return(df)
 # }
 
+# ================================================================================
 #' @export
 runif_sample = function(X, n) {
   if (is.character(X[[3]]) | length(X[[3]]) == 1) {
@@ -91,6 +98,7 @@ runif_sample = function(X, n) {
   }
 }
 
+# ================================================================================
 #' @export
 unif_sample_all = function(par_ranges, n_pars_each) {
   npars = lapply(par_ranges, function(X) {length(X[[3]])})
@@ -103,6 +111,7 @@ unif_sample_all = function(par_ranges, n_pars_each) {
   return(par_ranges)
 }
 
+# ================================================================================
 #' @export
 pct_rng = function(X, pct) {
   x1 = (X-X*pct)
@@ -110,7 +119,7 @@ pct_rng = function(X, pct) {
   return(c(x1, x2))
 }
 
-
+# ================================================================================
 #only works for single def pars
 #' @export
 write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NULL) {
@@ -123,7 +132,7 @@ write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NUL
   }
 }
 
-
+# ================================================================================
 # duplicate soil def pars for multiple soils
 #' @export
 dup_soil_pars = function(input_def_pars, input_hdr) {
@@ -147,7 +156,7 @@ dup_soil_pars = function(input_def_pars, input_hdr) {
   return(new_input_def_pars)
 }
 
-
+# ================================================================================
 # create parameter set based on all combinations of varying input vars
 #' @export
 def_par_allcomb = function(defpars) {
@@ -165,13 +174,28 @@ def_par_allcomb = function(defpars) {
   return(defpars)
 }
 
+# ================================================================================
 #' @export
-get_changed_inputpars = function(out_dir) {
-  inputpars = read.csv(list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T ))
+read_pars_table = function(out_dir) {
+  parstable = list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T )
+  if (length(parstable) == 0) {
+    stop("Couldn't find any pars tables")
+  } else if (length(parstable) > 1) {
+    stop("More than 1 pars table found")
+  }
+  inputpars = read.csv(parstable)
   if (names(inputpars)[1] == "X") {
     inputpars = inputpars[,-1]
   }
   return(inputpars)
 }
+
+# get_changed_inputpars = function(out_dir) {
+#   inputpars = read.csv(list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T ))
+#   if (names(inputpars)[1] == "X") {
+#     inputpars = inputpars[,-1]
+#   }
+#   return(inputpars)
+# }
 
 

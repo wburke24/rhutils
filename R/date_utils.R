@@ -1,5 +1,6 @@
 # date utils
 
+# ================================================================================
 # output rhessys formatted range of dates only including complete water years
 #' @export
 wy_range = function(dates) {
@@ -15,6 +16,7 @@ wy_range = function(dates) {
   return(date_out)
 }
 
+# ================================================================================
 #' @export
 daily_dates = function(X, Y) {
   out = X
@@ -24,6 +26,7 @@ daily_dates = function(X, Y) {
   return(out)
 }
 
+# ================================================================================
 # date2rhdate = function(date_in) {
 #   if(class(date_in) == "Date") {
 #     date_out = paste0(format(date_in, "%Y %m %d"), " 01")
@@ -37,6 +40,7 @@ daily_dates = function(X, Y) {
 #   }
 # }
 
+# ================================================================================
 #' @export
 add_dmy = function(df) {
   df$date = as.POSIXlt(df$date)

@@ -1,5 +1,6 @@
 # cleanup utils
 
+# ================================================================================
 #' @export
 cleanup_wmfire = function(dir) {
   pat = "ETGridYear|FireFailedIterGridYear|FireSizes|FireSpreadIterGridYear|FireSpreadPropGridYear|LoadGridYear|PDefGridYear|
@@ -12,6 +13,7 @@ cleanup_wmfire = function(dir) {
   cat("Moved fire grid output files to new directory\n")
 }
 
+# ================================================================================
 #' @export
 collect_csvs = function(dir, dir_base = "rh_out_") {
   csv_files = list.files(path = dir, pattern = "*\\.csv")
@@ -28,6 +30,7 @@ collect_csvs = function(dir, dir_base = "rh_out_") {
   }
 }
 
+# ================================================================================
 #' @export
 collect_params = function(dir) {
   params_files = list.files(path = dir, pattern = "*\\.params")

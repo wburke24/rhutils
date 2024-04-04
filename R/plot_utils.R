@@ -1,5 +1,6 @@
 # Utilities for plotting
 
+# ================================================================================
 #' @export
 g_legend<-function(a.gplot){
   tmp <- ggplot_gtable(ggplot_build(a.gplot))
@@ -11,7 +12,7 @@ g_legend<-function(a.gplot){
 #   vars = names(DT)[!names(DT) %in% c("day", "month", "year", "BasinID", "hillID", "zoneID", "patchID", "date")]
 # }
 
-
+# ================================================================================
 # aggregates to basin monthly for now
 #' @export
 plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "basin", aggvars = c("year","month")) {

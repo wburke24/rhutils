@@ -3,6 +3,7 @@
 # TODO
 # check_template
 
+# ================================================================================
 
 # readpars = read.csv("output/rh_out_2022-12-08--09-39-06/params/all_def_changes_2022-12-08_09.39.06.params",)
 # table2list = function(X, Y) {
@@ -17,7 +18,7 @@
 #
 # dput(inputdefsread)
 
-
+# ================================================================================
 
 # text and sound alert, inside of collect output
 #' @export
@@ -32,9 +33,13 @@ sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
   beepr::beep(2)
 }
 
+# ================================================================================
 # copy a source world redefine file and rename it using a specified date
 #' @export
 tec_copy_redef = function(input_redef, redef_date, worldfile, overwrite = F) {
+  if (length(input_redef) > 1) {
+    stop(paste0("Too many input redefine files: ",input_redef))
+  }
   if (is.character(redef_date) & length(redef_date) == 1) {
     redef_date = unlist(unname(strsplit(redef_date, "\\s+")))
   }
@@ -43,6 +48,7 @@ tec_copy_redef = function(input_redef, redef_date, worldfile, overwrite = F) {
   return(redef_date)
 }
 
+# ================================================================================
 # this is to reouput a worldfile read into R via read_world
 #' @export
 write_world = function(world, path) {
@@ -52,6 +58,7 @@ write_world = function(world, path) {
   writeLines(text = world_str, con = path)
 }
 
+# ================================================================================
 # find a world.state file and path, useful for finding and renaming newly made worldfiles
 #' @export
 worldstate = function(worldfile) {
@@ -67,6 +74,7 @@ worldstate = function(worldfile) {
   }
 }
 
+# ================================================================================
 # water balance for multiple basin outputs using output filters
 #' @export
 watbal_basin_of_multi = function(out_dir) {
@@ -83,6 +91,7 @@ watbal_basin_of_multi = function(out_dir) {
   return(watbal)
 }
 
+# ================================================================================
 # IDK WTF this is - autogen subset and output text
 # get_fixed_vars = function(DT) {
 #   isf = which(unname(sapply(DT, is.factor)))

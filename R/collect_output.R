@@ -18,7 +18,7 @@ collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = 
     cat("No csvs or params at specified directory.\n")
   } else {
     # make date+time unique folder in output folder
-    dirname = paste0(basename, gsub( ":", "-", sub( " ", "--", Sys.time())))
+    dirname = paste0(basename, format(Sys.time(), "%Y-%m-%d--%H-%M-%S"))
     dir.create(path = file.path(source_dir, output_dir, dirname))
     cat("Created directory '",file.path(source_dir, output_dir, dirname),"'\n", sep = "")
     # move params
@@ -32,7 +32,7 @@ collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = 
     # run metadata
     runmeta = list.files(path = output_dir, pattern = "run_metadata_.*\\.txt")
     if (length(runmeta) > 1) {
-      cat("Multiple metadata files found")
+      cat("Multiple metadata files found\n")
       dtstr = gsub(".txt","", gsub("run_metadata_","",runmeta))
       datetime = as.POSIXct(dtstr, format = "%Y-%m-%d--%H-%M-%OS")
       runmeta = runmeta[which.max(datetime)]
