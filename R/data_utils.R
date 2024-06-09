@@ -36,6 +36,35 @@ basin_output_fixes = function(DT) {
 }
 
 # ================================================================================
+#' @export
+get_stratum_daily = function(out_dir) {
+  stratum_files_in = list.files(path = out_dir, pattern = ".*_stratum.*\\.csv$", full.names = T)
+  if (length(stratum_files_in) == 0) {
+    stratum_files_in = list.files(path = out_dir, pattern = ".*\\.csv$", full.names = T)
+  }
+  run_names = gsub("_stratum.", "", gsub(".csv", "", basename(stratum_files_in)))
+  stratum_daily_list = lapply(stratum_files_in, fread)
+  stratum_daily_list = mapply(function(X,Y) {X$run = Y;return(X)} , stratum_daily_list, run_names, SIMPLIFY = F)
+  stratum_daily_dt = rbindlist(stratum_daily_list)
+  stratum_daily_dt = RHESSysIOinR::add_dates(stratum_daily_dt)
+  return(stratum_daily_dt)
+}
+# ================================================================================
+#' @export
+get_patch_daily = function(out_dir) {
+  patch_files_in = list.files(path = out_dir, pattern = ".*_patch.*\\.csv$", full.names = T)
+  if (length(patch_files_in) == 0) {
+    patch_files_in = list.files(path = out_dir, pattern = ".*\\.csv$", full.names = T)
+  }
+  run_names = gsub("_patch.", "", gsub(".csv", "", basename(patch_files_in)))
+  patch_daily_list = lapply(patch_files_in, fread)
+  patch_daily_list = mapply(function(X,Y) {X$run = Y;return(X)} , patch_daily_list, run_names, SIMPLIFY = F)
+  patch_daily_dt = rbindlist(patch_daily_list)
+  patch_daily_dt = RHESSysIOinR::add_dates(patch_daily_dt)
+  return(patch_daily_dt)
+}
+
+# ================================================================================
 # AGGREGATION TO BE LAPPLY'D ACROSS OUTPUTS
 #' @export
 agg_dyn = function(DT, name, aggvars, vars) {

@@ -14,11 +14,13 @@ read_def = function(def_file) {
 
 # ================================================================================
 #' @export
-write_param_table = function(input_def_pars) {
+write_param_table = function(input_def_pars, outfile_basename = "all_def_changes") {
   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
   param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
   names(param_table)[3:length(param_table[1,])] = paste0("run_",c(1:(length(param_table[1,])-2)))
-  write.csv(param_table, file = paste0("all_def_changes_" ,gsub( ":", ".", sub( " ", "_", Sys.time())), ".params"  ) )
+  outname = paste0(outfile_basename,"_" ,gsub( ":", ".", sub( " ", "_", Sys.time())), ".params"  )
+  write.csv(param_table, file = outname)
+  cat("Wrote table of parameter changes to: ", outname)
 }
 
 # ================================================================================
@@ -190,12 +192,27 @@ read_pars_table = function(out_dir) {
   return(inputpars)
 }
 
-# get_changed_inputpars = function(out_dir) {
-#   inputpars = read.csv(list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T ))
-#   if (names(inputpars)[1] == "X") {
-#     inputpars = inputpars[,-1]
-#   }
-#   return(inputpars)
-# }
-
-
+# ================================================================================
+#' @export
+get_varied_defpars_list = function(defpars) {
+  num_vals = unlist(lapply(defpars, FUN = function(X){length(X[[3]])}))
+  if (all(num_vals == 1)) {
+    cat("Only 1 value for all pars")
+    return(defpars)
+  }
+  num_unique = unlist(lapply(defpars, FUN = function(X){length(unique(X[[3]]))}))
+  if (all(num_unique == 1)) {
+    cat("Def pars are all unique")
+    return(defpars)
+  }
+  varied_pars = defpars[num_unique > 1]
+  return(varied_pars)
+}
+# ================================================================================
+#' @export
+defpars_list2df = function(defpars) {
+  df = data.frame(Parameter = sapply(defpars, "[[", 2), File = sapply(defpars, "[[", 1))
+  df = cbind(df, t(sapply(defpars, "[[", 3)))
+  names(df)[3:length(df[1,])] = paste0("Run_",c(1:(length(df[1,])-2)))
+  return(df)
+}

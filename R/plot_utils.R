@@ -15,7 +15,7 @@ g_legend<-function(a.gplot){
 # ================================================================================
 # aggregates to basin monthly for now
 #' @export
-plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "basin", aggvars = c("year","month")) {
+plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "basin", aggvars = c("year","month"),pdfwidth = 7, pdfheight = 7) {
   files_in = list.files(path = out_dir, pattern = pattern, full.names = T)
   if (length(files_in) == 0) {
     stop("No files found at specified output directory '",out_dir,"' using pattern '",pattern,"'")
@@ -29,7 +29,7 @@ plotpdf_allvars = function(out_dir, out_name, step = "monthly", pattern = "basin
 
   # output a pdf
   pdfname = file.path("plots", paste0(gsub(".pdf","", out_name), gsub( ":", ".", sub( " ", "_", Sys.time())), ".pdf"  ))
-  pdf(pdfname)
+  pdf(pdfname, width = pdfwidth, height = pdfheight)
   for (i in seq_along(vars)) {
     tmpplot = ggplot(DT) +
       aes(x = year_month,
