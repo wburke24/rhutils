@@ -79,3 +79,51 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
   cat("Do all the files exist?: ",all(file.exists(outlist$all_files)))
   return(outlist)
 }
+
+#' @export
+# AIO function for pronghorn using method of choice scp
+rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.5", dest, usr,
+                               input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter,
+                               transfer_method = "scp") {
+  # -------------------- HPC --------------------
+  #fix output strings and write to file
+  rhout_str = rhout_write_for_hpc(rhout, name, rh_bin_replace = rh_bin_replace)
+  # make list of changed files
+  filelist = list_rh_input_files(input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter)
+
+  if (transfer_method == "scp") {
+    defstr = c()
+    for (i in seq_along(unique(dirname(filelist$def_files)))) {
+      defdir = unique(dirname(filelist$def_files))[i]
+      defdirfiles = filelist$def_files[dirname(filelist$def_files) == defdir]
+      defstr = c(defstr,paste0("scp -i ~/rsa_key -p ",paste(defdirfiles,collapse =" ")," ", usr,dest,defdir))
+    }
+
+    scptxt =
+      c("#!/bin/bash",
+        paste0("scp -i ~/rsa_key -p ",paste(filelist$tec_files,collapse =" ")," ", usr,dest,"tecfiles/"),
+        paste0("scp -i ~/rsa_key -p ",paste(filelist$outputfilters,collapse =" ")," ", usr,dest,"output/filters"),
+        paste0("scp -i ~/rsa_key -p ",paste(filelist$hdr_files,collapse =" ")," ", file.path(usr,dest,unique(dirname(filelist$hdr_files)))),
+        defstr,
+        paste0("scp -i ~/rsa_key -p ",rhout_str," ", usr,dest,"scripts")
+      )
+
+    scpcon = file("scripts/scpfilelist.sh","wb")
+    writeLines(text = scptxt, con = scpcon, sep = "\n")
+    close(scpcon)
+    system("wsl ./scripts/scpfilelist.sh")
+
+    scpcmd = paste0("wsl ",paste0(scptxt,collapse = ";"))
+    system(scpcmd)
+    cat("SCP file transfer completed.\n")
+    return(rhout_str)
+
+  } else if (transfer_method == "rsync") {
+    # copy_cmd1 = paste0("rsync -azPR ", paste0(c(filelist$all_files,rhout_str),collapse = " ") , " ", usr,dest)
+    # dput(copy_cmd1)
+    # writeLines(text = c(filelist$all_files,rhout_str),con = "scripts/filelist.txt")
+    # copy_cmd2 = paste0("rsync -avvvPR --files-from=scripts/filelist.txt ./ ", usr,dest)
+    # dput(copy_cmd2)
+  }
+
+}
