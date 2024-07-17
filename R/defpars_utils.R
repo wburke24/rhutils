@@ -139,18 +139,20 @@ write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NUL
 #' @export
 dup_soil_pars = function(input_def_pars, input_hdr) {
   par_df = as.data.frame(t(sapply(input_def_pars, function(X){X[1:2]})))
+  names(par_df) = c("Def_file", "Variable")
   par_df$values = lapply(input_def_pars,"[[", 3)
+
   if (length(input_hdr$soil_def) <= 1) {
     cat("One or less soil definition files listed in input header, cannot duplicate soil def pars.")
     return(input_def_pars)
   }
-  if (length(input_hdr$soil_def) > 1 & all(input_hdr$soil_def %in% par_df$V1)) {
+  if (length(input_hdr$soil_def) > 1 & all(input_hdr$soil_def %in% par_df$Def_file)) {
     cat("Multiple soil definition files already being modified in input definition pars, don't want to overwrite/unclear which to dup.")
     return(input_def_pars)
   }
-  soil_i = which(par_df$V1 %in% input_hdr$soil_def)
-  def_cur = input_hdr$soil_def[input_hdr$soil_def %in% par_df$V1]
-  def2dup = input_hdr$soil_def[!input_hdr$soil_def %in% par_df$V1]
+  soil_i = which(par_df$Def_file %in% input_hdr$soil_def)
+  def_cur = input_hdr$soil_def[input_hdr$soil_def %in% par_df$Def_file]
+  def2dup = input_hdr$soil_def[!input_hdr$soil_def %in% par_df$Def_file]
   pars_added = lapply(def2dup, function(def2dup, cur_pars) {
     lapply(cur_pars, function(X,Y) {X[[1]] = Y; return(X)},def2dup)
   }, cur_pars = input_def_pars[soil_i])
@@ -169,7 +171,7 @@ def_par_allcomb = function(defpars) {
   }
   pars_mult = lapply(defpars[npars>1], "[[", 3)
   #pars_comb = expand.grid(as.list(unname(data.frame(pars_mult))))
-  pars_comb = expand.grid(pars_mult)
+  pars_comb = expand.grid(pars_mult, stringsAsFactors = F)
   defpars[npars>1] = mapply(function(X, Y) {X[[3]] = Y; return(X)}, defpars[npars>1], pars_comb, SIMPLIFY = F)
   defpars[npars==1] = lapply(pars_list[npars==1], function(X, Y) {X[[3]] = rep.int(X[[3]], Y); return(X)}, length(pars_comb[[1]]))
   cat("Output def pars length: ", length(pars_comb[[1]]))

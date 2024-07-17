@@ -103,5 +103,105 @@ watbal_basin_of_multi = function(out_dir) {
 # }
 
 
+# ================================================================================
+# get runID - for setting output ids and collecting output and associating with an r obj
+#' @export
+GetRunID = function(increment = FALSE, reset = FALSE) {
+  runidfile = ".runid"
+  if (!file.exists(runidfile)) {
+    runcon = file(runidfile,open = "w+")
+    writeLines(text = "0",runcon)
+    close(runcon)
+    cat("Current run ID: ",runid,"\n")
+    return(runid)
+  }
+  runcon = file(runidfile,open = "r+")
+  if (reset) {
+    writeLines(text = "0",runcon)
+    close(runcon)
+    cat("Current run ID: ",0,"\n")
+    return(0)
+  }
+  runid = as.numeric(readLines(con = runcon))
+  if (length(runid) == 0) {
+    runid = 0
+  }
+
+  if (increment) {
+    runid = runid + 1
+    writeLines(as.character(runid), runcon)
+  }
+  close(runcon)
+  cat("Current run ID: ",runid,"\n")
+  return(runid)
+}
+
+# ================================================================================
+# AddRunIDtoOutputFilters
+#' @export
+AddRunIDtoOutputFilters = function(output_filter, runid) {
+  output_filter[names(output_filter) == "filter"] = lapply(output_filter[names(output_filter) == "filter"],
+                                                           function(X,Y){X$output$filename = paste0(X$output$filename,"_RunID",Y); return(X)}, runid)
+  return(output_filter)
+}
 
 
+find_runID = function(out_dir) {
+  allcsv = list.files(out_dir, ".csv")
+  if (all(grepl("RunID\\d+",allcsv))) {
+    runids = stringr::str_extract(allcsv,"RunID\\d+")
+    if (length(unique(runids)) > 1) {
+      cat("\nMore than 1 runid in  the output for some reason this won't work.\n")
+    } else {
+      cat("\nRun ID:",unique(runids),"\n")
+      return(unique(runids))
+    }
+  } else {
+    cat("\nCouldn't find run ID in the output file names\n")
+    return(NA)
+  }
+}
+
+
+#
+# remove_common_parts <- function(char_vec) {
+#   if (length(char_vec) <= 1) {
+#     return(char_vec)
+#   }
+#
+#   split_strings <- strsplit(char_vec, "")
+#   min_length <- min(sapply(split_strings, length))
+#
+#   common_prefix <- ""
+#   common_suffix <- ""
+#
+#   # Find common prefix
+#   for (i in 1:min_length) {
+#     current_chars <- sapply(split_strings, `[`, i)
+#     if (length(unique(current_chars)) == 1) {
+#       common_prefix <- paste0(common_prefix, current_chars[1])
+#     } else {
+#       break
+#     }
+#   }
+#
+#   # Find common suffix
+#   for (i in 1:min_length) {
+#     current_chars <- sapply(split_strings, function(x) x[length(x) - i + 1])
+#     if (length(unique(current_chars)) == 1) {
+#       common_suffix <- paste0(current_chars[1], common_suffix)
+#     } else {
+#       break
+#     }
+#   }
+#
+#   common_prefix_len <- nchar(common_prefix)
+#   common_suffix_len <- nchar(common_suffix)
+#
+#   # Remove common prefix and suffix
+#   stripped_strings <- sapply(char_vec, function(x) {
+#     substr(x, common_prefix_len + 1, nchar(x) - common_suffix_len)
+#   })
+#
+#   return(stripped_strings)
+# }
