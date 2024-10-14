@@ -218,3 +218,17 @@ defpars_list2df = function(defpars) {
   names(df)[3:length(df[1,])] = paste0("Run_",c(1:(length(df[1,])-2)))
   return(df)
 }
+
+# ================================================================================
+# transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr
+#' @export
+defpar_df_t2parcols = function(defpar_df) {
+  df_t = as.data.frame(t(defpar_df[, names(defpar_df) != c("Parameter","File")]))
+  colnames(df_t) = paste0(defpar_df$Parameter,"__",defpar_df$File)
+
+  # if all are numeric, switch
+  validnum = sapply(df_t,function(X) {all(!is.na(suppressWarnings(as.numeric(X)))) } )
+  df_t[,validnum]
+  df_t[,validnum] = sapply(df_t[,validnum], as.numeric)
+  return(df_t)
+}

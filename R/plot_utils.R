@@ -16,7 +16,7 @@ g_legend<-function(a.gplot){
 # aggregates to basin monthly for now
 #' @export
 plotpdf_allvars = function(out_dir,
-                           out_name,
+                           out_name = NULL,
                            step = "monthly",
                            pattern = "_basin",
                            aggvars = c("year", "month"),
@@ -43,6 +43,12 @@ plotpdf_allvars = function(out_dir,
   }
 
   # output a pdf
+  if (is.null(out_name)) {
+    out_name = "plots"
+  }
+  if (!dir.exists("plots")) {
+    dir.create("plots")
+  }
   pdfname = file.path("plots", paste0(gsub(".pdf","", out_name), gsub( ":", ".", sub( " ", "_", Sys.time())), ".pdf"  ))
   pdf(pdfname, width = pdfwidth, height = pdfheight)
   for (i in seq_along(vars)) {

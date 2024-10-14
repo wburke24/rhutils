@@ -40,7 +40,7 @@ cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {
   }
 
   run_IDs = unique(Qsim$run)
-  run_IDs = run_IDs[order(as.numeric(gsub("[^0-9]+_", "",run_IDs)))] #
+  run_IDs = run_IDs[order(as.numeric(stringr::str_extract(run_IDs, "(?<=_)\\d+$")))]
 
   if (monthly) {
     Qsim_mn = aggregate(Qsim$streamflow, by = list(Qsim$run, Qsim$year, Qsim$month), FUN = mean)

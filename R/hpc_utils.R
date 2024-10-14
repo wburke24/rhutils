@@ -56,21 +56,27 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
 
   # dumb version for now?
   runids = seq_along(input_def_pars[[1]][[3]])
+  runsuffix = paste0("_",runids)
+  if (length(runids) == 1) {
+    runsuffix = NULL
+  }
+
   if (!is.null(input_def_pars) ) {
     if (!is.null(input_rhessys$world_hdr_path)) {
-      outlist$hdr_files = paste0("worldfiles/",input_rhessys$world_hdr_path,"/",input_rhessys$world_hdr_prefix,"_",runids,".hdr")
+      outlist$hdr_files = paste0("worldfiles/",input_rhessys$world_hdr_path,"/",input_rhessys$world_hdr_prefix,runsuffix,".hdr")
     } else {
-      outlist$hdr_files = paste0("worldfiles/",input_rhessys$world_hdr_prefix,"/",input_rhessys$world_hdr_prefix,"_",runids,".hdr")
+      outlist$hdr_files = paste0("worldfiles/",input_rhessys$world_hdr_prefix,"/",input_rhessys$world_hdr_prefix,runsuffix,".hdr")
     }
     # defs - assumes everything included in input defs is changing which i think is true
     defs_chg = unlist(unique(lapply(input_def_pars,"[",1)))
     defs_static = unname(unlist(input_hdr))[!unname(unlist(input_hdr)) %in% defs_chg]
     defs_chg_list = list()
     for (i in seq_along(defs_chg)) {
-      defs_chg_list[[i]] = file.path("defs",gsub(".def","",basename(defs_chg[i])), paste0(gsub(".def","",basename(defs_chg[i])), "_",runids,".def"))
+      defs_chg_list[[i]] = file.path("defs",gsub(".def","",basename(defs_chg[i])), paste0(gsub(".def","",basename(defs_chg[i])), runsuffix,".def"))
     }
     outlist$def_files = c(unlist(defs_chg_list), defs_static)
-    outlist$outputfilters = paste0(output_filter$file_name,"_", runids)
+    outlist$outputfilters = paste0(output_filter$file_name,runsuffix)
+
   } else {
     outlist$hdr_files = paste0("worldfiles/",input_rhessys$world_hdr_prefix,"/",input_rhessys$world_hdr_prefix,".hdr")
     outlist$def_files = unname(unlist(input_hdr))
@@ -83,6 +89,7 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
 
   cat("Do all the files exist?: ",all(file.exists(outlist$all_files)),"\n")
   if (!all(file.exists(outlist$all_files))) {
+    print(data.frame(file = outlist$all_files, exists = file.exists(outlist$all_files)))
     stop("Something went wrong, trying to list nonexistent files.\n")
   }
   return(outlist)
@@ -91,13 +98,16 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
 #' @export
 # AIO function for pronghorn using method of choice scp
 rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.5", dest, usr,
-                               input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter,
+                               input_rhessys = NULL, input_hdr = NULL, input_def_pars = NULL, input_tec_data = NULL, output_filter = NULL,
+                               filelist = NULL,
                                transfer_method = "scp") {
   # -------------------- HPC --------------------
   #fix output strings and write to file
   rhout_str = rhout_write_for_hpc(rhout, name, rh_bin_replace = rh_bin_replace)
   # make list of changed files
-  filelist = list_rh_input_files(input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter)
+  if (is.null(filelist) & !is.null(input_rhessys)) {
+    filelist = list_rh_input_files(input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter)
+  }
 
   if (transfer_method == "scp") {
     defstr = c()
@@ -108,7 +118,7 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
     }
 
     scptxt =
-      c("#!/bin/bash",
+      c(
         paste0("scp -i ~/rsa_key -p ",paste(filelist$tec_files,collapse =" ")," ", usr,dest,"tecfiles/"),
         paste0("scp -i ~/rsa_key -p ",paste(filelist$outputfilters,collapse =" ")," ", usr,dest,"output/filters"),
         paste0("scp -i ~/rsa_key -p ",paste(filelist$hdr_files,collapse =" ")," ", file.path(usr,dest,unique(dirname(filelist$hdr_files)))),
@@ -116,19 +126,21 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
         paste0("scp -i ~/rsa_key -p ",rhout_str," ", usr,dest,"scripts")
       )
 
-    # scpcon = file("scripts/scpfilelist.sh","wb")
-    # writeLines(text = scptxt, con = scpcon, sep = "\n")
-    # close(scpcon)
-    # system("wsl ./scripts/scpfilelist.sh")
-
     remote_dirs = paste(unique(dirname(filelist$all_files)),collapse = " ")
     dircmd = paste0("wsl ssh -i ~/rsa_key ", gsub(":","",usr)," \"cd ",dest,"&& mkdir -p ",remote_dirs,"\"")
     cat("\nMaking dirs: ",dircmd,"\n\n")
     system(dircmd)
 
-    scpcmd = paste0("wsl ",paste0(scptxt[-1],collapse = ";"))
     cat("\nRunning SCP commands...\n\n")
-    system(scpcmd)
+    scpcon = file("scripts/scpfilelist.sh","wb")
+    writeLines(text = c("#!/bin/bash",scptxt), con = scpcon, sep = "\n")
+    close(scpcon)
+    system("wsl ./scripts/scpfilelist.sh")
+    file.remove("scripts/scpfilelist.sh")
+
+    # scpcmd = paste0("wsl ",paste0(scptxt,collapse = ";"))
+    # cat("\nRunning SCP commands...\n\n")
+    # system(scpcmd)
     cat("SCP file transfer completed.\n")
     return(rhout_str)
 
