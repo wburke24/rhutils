@@ -101,7 +101,8 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
                                input_rhessys = NULL, input_hdr = NULL, input_def_pars = NULL, input_tec_data = NULL, output_filter = NULL,
                                filelist = NULL,
                                transfer_method = "scp") {
-  # -------------------- HPC --------------------
+  # ----- input checks -----
+  if (!endsWith(usr,":") ) {usr = paste0(usr,":")}
   #fix output strings and write to file
   rhout_str = rhout_write_for_hpc(rhout, name, rh_bin_replace = rh_bin_replace)
   # make list of changed files
@@ -150,6 +151,23 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
     # writeLines(text = c(filelist$all_files,rhout_str),con = "scripts/filelist.txt")
     # copy_cmd2 = paste0("rsync -avvvPR --files-from=scripts/filelist.txt ./ ", usr,dest)
     # dput(copy_cmd2)
+    cat("This doesn't work right now.")
   }
 
+}
+
+#' @export
+# check list of list of files and collapse to remove duplicate sublists and entries (from a loop of runs running list_rh_input_files())
+collapse_rh_input_files_list = function(filelist) {
+  if ((is.list(filelist) & length(filelist)==10) & !is.list(filelist[[1]])) {
+    stop("filelist is probably already correctly formatted for hpc functions")
+  }
+  tmp = unlist(filelist,recursive = F)
+  filenames = unique(names(tmp))
+  filelist_new = list()
+  for (i in seq_along(filenames)) {
+    n = which(names(tmp) == filenames[i])
+    filelist_new[[filenames[i]]] = unique(unname(unlist(tmp[n])))
+  }
+  return(filelist_new)
 }

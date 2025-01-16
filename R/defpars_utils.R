@@ -232,3 +232,15 @@ defpar_df_t2parcols = function(defpar_df) {
   df_t[,validnum] = sapply(df_t[,validnum], as.numeric)
   return(df_t)
 }
+
+# ================================================================================
+# get new parlist based on id/num of existing par list
+#' @export
+defpar_extract_byrunnum = function(pars_list, runnum) {
+  extfun = function(X,Y) {
+    X[[3]] = X[[3]][Y]
+    return(X)
+  }
+  newparlist = lapply(pars_list,extfun,runnum)
+  return(newparlist)
+}

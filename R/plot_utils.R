@@ -3,7 +3,7 @@
 # ================================================================================
 #' @export
 g_legend<-function(a.gplot){
-  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  tmp <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(a.gplot))
   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
   legend <- tmp$grobs[[leg]]
   return(legend)}
@@ -15,6 +15,7 @@ g_legend<-function(a.gplot){
 # ================================================================================
 # aggregates to basin monthly for now
 #' @export
+
 plotpdf_allvars = function(out_dir,
                            out_name = NULL,
                            step = "monthly",
@@ -36,7 +37,7 @@ plotpdf_allvars = function(out_dir,
   vars = names(DT_l[[1]])[!names(DT_l[[1]]) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "sID", "run")]
   # uses dynamic aggregation function
   DT_l = mapply(agg_dyn, DT_l, names, MoreArgs = list(aggvars = aggvars, vars = vars), SIMPLIFY = F)
-  DT = rbindlist(DT_l)
+  DT = data.table::rbindlist(DT_l)
 
   if (!is.null(runs)) {
     DT = DT[DT$run %in% runs,]

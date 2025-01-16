@@ -45,7 +45,8 @@ add_patch_veg_parm_IDs = function(output_df, world_source) {
     cat("Patch IDs in the data did not match IDs in the worldfile")
     return(output_df)
   }
-  output_df = output_df[veg_parm_IDs, on = .(patchID)]
+  # output_df = output_df[veg_parm_IDs, on = .(patchID)]
+  output_df = merge(output_df, veg_parm_IDs, by = "patchID")
   return(output_df)
 }
 

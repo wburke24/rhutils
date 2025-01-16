@@ -1,7 +1,38 @@
 # General and miscellaneous utilities
 
-# TODO
-# check_template
+#' @export
+setup_rhessys_folders = function(base_dir) {
+  # base_dir = "~/Projects/RedRock/"
+  
+  len = 57 + nchar(base_dir)
+  cat(paste0(rep("=",len),collapse = "") ,"\n")
+  cat("*** Creating RHESSys project folders in directory: '",base_dir,"' ***\n",sep = "")
+  cat(paste0(rep("=",len),collapse = "") ,"\n")
+
+  # this is just a list of folders to check if they exist, and if not, create them
+  # doing no capitalization
+  make_dirs = c("clim", "defs","flowtables","output","plots","preprocessing","R","robj","scripts","tecfiles","worldfiles","output/filters","preprocessing/preprocess_out","preprocessing/spatial_source")
+
+  # if (endsWith(base_dir,.Platform$file.sep)) {
+  #   gsub("/$","test" ,base_dir)
+  #   stringr::str_remove(base_dir)
+  # }
+
+  for (i in seq_along(make_dirs)) {
+    if (!dir.exists(file.path(base_dir, make_dirs[i]))) {
+      dir.create(file.path(base_dir, make_dirs[i]))
+      cat("Created '",make_dirs[i],"' folder.\n",sep="")
+    } else {
+      cat("Skipped '",make_dirs[i],"' folder. Already existed.\n",sep="")
+    }
+  }
+
+  cat(paste0(rep("=",48),collapse = "") ,"\n")
+  cat("*** RHESSys project folder creation complete ***\n",sep = "")
+  cat(paste0(rep("=",48),collapse = "") ,"\n")
+  # return(NULL)
+
+}
 
 # ================================================================================
 

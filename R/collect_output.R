@@ -3,6 +3,10 @@
 #' Collects the output files data and parameter files from a rhessys run and auto-generates a folder to place them in
 #' @import data.table
 #' @import ggplot2
+#' @import terra
+#' @import leaflet
+#' @import sf
+#' @import soiltexture
 #' @export
 
 collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", alert = T) {
