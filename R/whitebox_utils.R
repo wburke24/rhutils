@@ -233,6 +233,7 @@ wbox_subbasins_plot = function(subbasins, streams, output_dir, stream_threshold,
   }
 }
 
+#' @export
 polaris2texture = function(basin, sand, clay, plot_out, writeplots=T) {
   fill.na <- function(x, i=5) {
     if(is.na(x)[i]) {
@@ -295,6 +296,7 @@ polaris2texture = function(basin, sand, clay, plot_out, writeplots=T) {
   return(soil_texture)
 }
 
+#' @export
 soil_texture_plot = function(soil_texture, plot_out, writeplots = T) {
   usdaID = data.frame(name = c("clay","silty-clay", "silty-clay-loam", "sandy-clay", "sandy-clay-loam", "clay-loam", "silt","silt-loam","loam","sand","loamy-sand","sandy-loam"),ID = c(1:12))
 
