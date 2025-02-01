@@ -128,7 +128,7 @@ pfam_extract_world = function(familyID, world) {
   # fix zone area - should already be correct, but double check
   areasdf = world_extract[world_extract$vars == "area", ]
   if (as.numeric(areasdf[areasdf$level == "zone", values]) != sum(as.numeric(areasdf[areasdf$level == "patch", values])) ) {
-    world_extract[world_extract$vars == "area" & world_extract$level == "zone", values] = sum(as.numeric(areasdf[areasdf$level == "patch", values]))
+    world_extract[world_extract$vars == "area" & world_extract$level == "zone", "values"] = sum(as.numeric(areasdf[areasdf$level == "patch", values]))
   }
   #fix zone ct, probably fine also
   if (as.numeric(world_extract[world_extract$vars == "num_patches", values]) != length(unique(world_extract[world_extract$level=="patch",patch_ID])) ) {
