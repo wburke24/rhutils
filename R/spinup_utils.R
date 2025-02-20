@@ -31,6 +31,9 @@ world_add_patch_vegparmIDcol = function(world) {
   return(world)
 }
 
+
+
+
 # add family ID and rule ID, will cover the strata and patches
 #' @export
 world_add_familyID_RuleID = function(world) {
@@ -110,16 +113,23 @@ pfam_extract_world = function(familyID, world) {
   # only need parent levels, and only need to correct those
   cat("Assumes world has zone, hill, patch family, and patch ID cols, and using datatable\n")
 
+  # this is patches and strata that match the patch family
   target = world[family_ID == familyID,]
   # use unique IDs for simplicity
   target_uniqID = unique(target$unique_ID)
   
-  # # need world, basin, hill, and zone
-  target_zone_uniqID = unique(world[world$level == "zone" & world$zone_ID == unique(target$zone_ID), unique_ID])
-  target_hill_uniqID = unique(world[world$level == "hillslope" & world$hillslope_ID == unique(target$hillslope_ID), unique_ID])
+  # find the zone, hillslope, and basin+world that contain the patch fam
+  # world + basin
   target_world_basin_uniqID = unique(world[world$level %in% c("world","basin"), unique_ID])
 
-  if (length(target_zone_uniqID) > 1 | length(target_hill_uniqID) > 1) {
+  # for zone and hill, use index/number of first patch and work backwards until the preceeding zone and hill
+  allzone_uniqIDs = unique(world[world$level == "zone", unique_ID])
+  target_zone_uniqID = max(allzone_uniqIDs[allzone_uniqIDs < min(target_uniqID)])
+  #hillslope
+  allhill_uniqIDs = unique(world[world$level == "hillslope", unique_ID])
+  target_hill_uniqID = max(allhill_uniqIDs[allhill_uniqIDs < min(target_uniqID)])
+
+  if (length(unique(target$zone_ID)) > 1 || length(unique(target$hillslope_ID)) > 1) {
     stop("This code only worls for 1 zone 1 hillslope ")
   }
 
