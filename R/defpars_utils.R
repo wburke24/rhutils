@@ -220,6 +220,17 @@ defpars_list2df = function(defpars) {
 }
 
 # ================================================================================
+#' @export
+defpars_csv2list = function(defpar_csv) {
+  df = read.csv(defpar_csv)
+  vcol = which(names(df) == "variable")
+  dcol = which(names(df) == "def_file")
+  r1col = max(vcol, dcol) + 1
+  def_list = apply(df, 1, FUN = function(X){list(Def_file = unname(X[dcol]), Variable = unname(X[vcol]), Value = unname(X[r1col:length(X)]))} )
+  return(def_list)
+}
+
+# ================================================================================
 # transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr
 #' @export
 defpar_df_t2parcols = function(defpar_df) {
@@ -243,4 +254,59 @@ defpar_extract_byrunnum = function(pars_list, runnum) {
   }
   newparlist = lapply(pars_list,extfun,runnum)
   return(newparlist)
+}
+
+# ================================================================================
+# param from def file
+#' @export
+get_def_par = function(def_file, parameter = NULL) {
+  tmp = read_def(def_file)
+  if (is.null(parameter)) {
+    cat("No parameter indicated, parameters in def file:\n")
+    print(tmp$names)
+    return(tmp$names)
+  }
+  if (sum(tmp$names == parameter) == 0) {
+    cat("No parameter in file matching '",parameter,"'. Parameters in def file:\n")
+    print(tmp$names)
+    return(NULL)
+  }
+  parval = tmp[tmp$names == parameter,"pars"]
+  return(parval)
+}
+
+# ================================================================================
+# list of def file, param, values, from current def file
+#' @export
+make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
+  # defaults = "~/Repos/RHESSys-develop/rhessys/init/construct_stratum_defaults.c"
+  def = read_def(def_file)
+
+  if (!all(parameters %in% def$names)) {
+    cat("Not all parameters found in def file, using defaults if supplied.\n")
+    parameters_in_def = parameters[parameters %in% def$names]
+    par_vals = mapply(get_def_par, def_file, parameters_in_def, USE.NAMES = F)
+    param_df = data.frame(Variable = parameters_in_def, Value = par_vals)
+
+    if (!is.null(defaults)) {
+      missing_pars = parameters[!parameters %in% def$names]
+      allpars = check_params(rh_file = defaults, def_file = def_file)
+      if (!all(missing_pars %in% allpars$Name)) {
+        cat("Not all missing parameters found in defaults - likely invalid.\n")
+        missing_pars = missing_pars[missing_pars %in% allpars$Name]
+      }
+      tmp = allpars[allpars$Name %in% missing_pars, ]
+      missing_par_df = data.frame(Variable = tmp$Name, Value = tmp$DefaultValue)
+      param_df = rbind(param_df, missing_par_df)
+    } else {
+      cat("No defaults supplied, using only parameters found in def_file.\n")
+      # parameters = parameters[parameters %in% def$names]
+    }
+  } else {
+    par_vals = mapply(get_def_par, def_file, parameters, USE.NAMES = F)
+    param_df = data.frame(Variable = parameters, Value = par_vals)
+  }
+  # make into a list for input into ioinR
+  param_list = apply(param_df, 1, FUN = function(X,Y){list(Def_file = Y, Variable = unname(X[1]), Value = unname(X[2]))}, def_file )
+  return(param_list)
 }

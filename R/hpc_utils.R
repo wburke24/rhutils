@@ -78,7 +78,7 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
     outlist$outputfilters = paste0(output_filter$file_name,runsuffix)
 
   } else {
-    outlist$hdr_files = paste0("worldfiles/",input_rhessys$world_hdr_prefix,"/",input_rhessys$world_hdr_prefix,".hdr")
+    outlist$hdr_files = paste0("worldfiles/",ifelse(is.null(input_rhessys$world_hdr_path), input_rhessys$world_hdr_prefix, input_rhessys$world_hdr_path) ,"/",input_rhessys$world_hdr_prefix,".hdr")
     outlist$def_files = unname(unlist(input_hdr))
     outlist$outputfilters = paste0(output_filter$file_name)
   }

@@ -33,6 +33,14 @@ plotpdf_allvars = function(out_dir,
   names = gsub(pattern = pattern, "",basename(files_in))
   names = gsub(".csv","",names)
 
+  if (step == "monthly") {
+    aggvars = c("year", "month")
+  } else if (step == "yearly") {
+    aggvars = c("year")
+  } else {
+    stop("Only valid steps are 'monthly' or 'yearly'")
+  }
+
   DT_l = lapply(files_in, fread)
   vars = names(DT_l[[1]])[!names(DT_l[[1]]) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "sID", "run")]
   # uses dynamic aggregation function
@@ -50,19 +58,35 @@ plotpdf_allvars = function(out_dir,
   if (!dir.exists("plots")) {
     dir.create("plots")
   }
-  pdfname = file.path("plots", paste0(gsub(".pdf","", out_name), gsub( ":", ".", sub( " ", "_", Sys.time())), ".pdf"  ))
+  
+  pdfname = file.path("plots", paste0(gsub(".pdf","", out_name),"_", format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".pdf"  ) )
   pdf(pdfname, width = pdfwidth, height = pdfheight)
+
   for (i in seq_along(vars)) {
-    tmpplot = ggplot(DT) +
-      aes(x = year_month,
-          y = .data[[vars[i]]],
-          color = as.factor(run),
-          linetype = as.factor(run)) +
-      geom_line() +
-      ggtitle(vars[i]) +
-      xlab("Year Month") +
-      ylab("M or kg/M2 or other") +
-      labs(color = "Run", linetype = "Run")
+    if (step == "monthly") {
+      tmpplot = ggplot(DT) +
+        aes(x = year_month,
+            y = .data[[vars[i]]],
+            color = as.factor(run),
+            linetype = as.factor(run)) +
+        geom_line() +
+        ggtitle(vars[i]) +
+        xlab("Year Month") +
+        ylab("M or kg/M2 or other") +
+        labs(color = "Run", linetype = "Run")
+    } else if (step == "yearly") {
+      tmpplot = ggplot(DT) +
+        aes(x = year,
+            y = .data[[vars[i]]],
+            color = as.factor(run),
+            linetype = as.factor(run)) +
+        geom_line() +
+        ggtitle(vars[i]) +
+        xlab("Year Month") +
+        ylab("M or kg/M2 or other") +
+        labs(color = "Run", linetype = "Run")
+    }
+
     tmpplot
 
     if (hide_legend) {

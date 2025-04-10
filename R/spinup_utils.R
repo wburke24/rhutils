@@ -31,9 +31,6 @@ world_add_patch_vegparmIDcol = function(world) {
   return(world)
 }
 
-
-
-
 # add family ID and rule ID, will cover the strata and patches
 #' @export
 world_add_familyID_RuleID = function(world) {
@@ -46,10 +43,15 @@ world_add_familyID_RuleID = function(world) {
     names(pfams)[2] = "family_ID"
     world = merge(world, pfams, by = "patch_ID", sort = F, all = T)
 
-    rules = world[world$vars == "asp_rule",c("family_ID","values")]
-    names(rules)[2] = "rule_ID"
-    rules = unique(rules)
-    world = merge(world, rules, by = "family_ID", sort = F, all = T)
+    if (any(world$vars == "asp_rule")) {
+      rules = world[world$vars == "asp_rule",c("family_ID","values")]
+      names(rules)[2] = "rule_ID"
+      rules = unique(rules)
+      world = merge(world, rules, by = "family_ID", sort = F, all = T)
+    } else {
+      cat("No asp_rule found in worldfile, omitting.")
+    }
+
     return(world)
 
   } else {
