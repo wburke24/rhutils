@@ -51,10 +51,10 @@ cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {
     names(Qobs_mn) = c("year","month","Flow_mmd")
 
     eval_fun_mn = function(i) {
-      nse = hydroGOF::NSE(Qsim_mn[Qsim_mn$run == i, "streamflow"], Qobs_mn$Flow_mmd)
+      nse = hydroGOF::NSE(sim = Qsim_mn[Qsim_mn$run == i, "streamflow"], obs = Qobs_mn$Flow_mmd)
       r = summary(lm(Qobs_mn$Flow_mmd ~ Qsim_mn[Qsim_mn$run == i, "streamflow"] ))$r.squared
-      pbias = hydroGOF::pbias(obs = Qobs_mn$Flow_mmd,sim = Qsim_mn[Qsim_mn$run == i, "streamflow"])
-      nse_log = hydroGOF::NSE(Qsim_mn[Qsim_mn$run == i, "streamflow"]+ 0.000001, Qobs_mn$Flow_mmd+ 0.000001, fun=log)
+      pbias = hydroGOF::pbias(sim = Qsim_mn[Qsim_mn$run == i, "streamflow"], obs = Qobs_mn$Flow_mmd)
+      nse_log = hydroGOF::NSE(sim = Qsim_mn[Qsim_mn$run == i, "streamflow"]+ 0.000001,obs = Qobs_mn$Flow_mmd+ 0.000001, fun=log)
       rmse = hydroGOF::rmse(sim = Qsim_mn[Qsim_mn$run == i, "streamflow"], obs = Qobs_mn$Flow_mmd)
       return(list(i, nse, nse_log,pbias,rmse, r))
     }
@@ -71,10 +71,10 @@ cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {
   }
 
   eval_fun = function(i) {
-    nse = hydroGOF::NSE(Qsim[Qsim$run == i, streamflow], Qobs$Flow_mmd)
+    nse = hydroGOF::NSE(sim = Qsim[Qsim$run == i, streamflow], obs = Qobs$Flow_mmd)
     r = summary(lm(Qobs$Flow_mmd ~ Qsim[Qsim$run == i, streamflow] ))$r.squared
-    pbias = hydroGOF::pbias(obs = Qobs$Flow_mmd, sim = Qsim[Qsim$run == i, streamflow])
-    nse_log = hydroGOF::NSE(Qsim[Qsim$run == i, streamflow]+ 0.000001, Qobs$Flow_mmd+ 0.000001, fun=log)
+    pbias = hydroGOF::pbias(sim = Qsim[Qsim$run == i, streamflow], obs = Qobs$Flow_mmd)
+    nse_log = hydroGOF::NSE(sim = Qsim[Qsim$run == i, streamflow]+ 0.000001, obs = Qobs$Flow_mmd+ 0.000001, fun=log)
     rmse = hydroGOF::rmse(sim = Qsim[Qsim$run == i, streamflow], obs = Qobs$Flow_mmd)
     return(list(i, nse, nse_log, pbias, rmse, r))
   }
