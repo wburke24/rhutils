@@ -173,7 +173,7 @@ def_par_allcomb = function(defpars) {
   #pars_comb = expand.grid(as.list(unname(data.frame(pars_mult))))
   pars_comb = expand.grid(pars_mult, stringsAsFactors = F)
   defpars[npars>1] = mapply(function(X, Y) {X[[3]] = Y; return(X)}, defpars[npars>1], pars_comb, SIMPLIFY = F)
-  defpars[npars==1] = lapply(pars_list[npars==1], function(X, Y) {X[[3]] = rep.int(X[[3]], Y); return(X)}, length(pars_comb[[1]]))
+  defpars[npars==1] = lapply(defpars[npars==1], function(X, Y) {X[[3]] = rep.int(X[[3]], Y); return(X)}, length(pars_comb[[1]]))
   cat("Output def pars length: ", length(pars_comb[[1]]))
   return(defpars)
 }

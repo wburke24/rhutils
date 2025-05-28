@@ -29,16 +29,39 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
   # return(maps_out)
 
   wbt_extract_streams(flow_accum = file.path(tmp_dir, "dem_brch_accum_d8.tif"), output = file.path(tmp_dir, "streams.tif"), threshold = stream_threshold)
+  
+  # POUR POINT CANNOT HAVE ATTRIBUTE DATA FOR SOME STUPID REASON
+  if(length(names(vect(source_gauge))) > 0) {
+    # remove attributes and write a temp file
+    cat("Pour point cannot have attributes - writing temporary version for use with snap pour points.\n")
+    v = vect(source_gauge)    
+    v_geom <- vect(geom(v), crs = crs(v))  # keep CRS explicitly
+    writeVector(v_geom, file.path(tmp_dir, "pour_point_temp.shp"), overwrite = TRUE)
+    source_gauge = file.path(tmp_dir, "pour_point_temp.shp")
+  }
+  
   #snapped gauge is first final output
   wbt_jenson_snap_pour_points(pour_pts = source_gauge, 
                               streams = file.path(tmp_dir, "streams.tif"), 
                               output = file.path(output_dir, "gauge_loc_snap.shp"), 
-                              snap_dist = gauge_snap_dist)
+                              snap_dist = gauge_snap_dist)  
+    
+  tmp = vect(file.path(output_dir, "gauge_loc_snap.shp"))
+  if (length(tmp) == 0) {
+    stop("Gauge snapping failed, try different distance.")
+  }
+
+  if (plots) {
+    plot(rast(file.path(tmp_dir, "streams.tif")), main = paste0("Streams & pour point"),col="black")
+    plot(vect(source_gauge),add=T ,col="red", , pch = 19, cex = 1.5)
+    plot(vect(file.path(output_dir, "gauge_loc_snap.shp")),add=T ,col="blue", , pch = 17, cex = 1.5)
+    legend("topright", legend = c("Source gauge", "Snapped gauge"),col = c("red","blue"), pch = c(19, 17), pt.cex = 1.5, bty = "n")
+  }
 
   wbt_watershed(d8_pntr = file.path(tmp_dir, "dem_brch_ptr_d8.tif"), 
                 pour_pts = file.path(output_dir, "gauge_loc_snap.shp"), 
                 output = file.path(output_dir, "basin.tif"))
-
+  
   # ==================== trim the breach DEM and streams to the basin for later use ====================
   cat("Masking dem_brch.tif to basin extent.\n")
   dem_brch_mask = mask(rast(file.path(tmp_dir, "dem_brch.tif")), rast(file.path(output_dir, "basin.tif")))
@@ -68,6 +91,12 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
       dev.copy2pdf(file = file.path(output_dir, "basin_unmasked_streamsgauge.pdf"), width = 8, height = 6)
     }
   }
+
+  b = rast(file.path(output_dir, "basin.tif"))
+  bsize = sum(b[!is.na(b)]) * res(b)[1] * res(b)[2]
+
+  cat("Basin is ",bsize," in map area units (probably square meters).\nAssuming square meters, in square km, basin is: ",bsize/(1000*1000),".\n")
+  cat("With patches as unique grid cells, there would be: ",sum(b[!is.na(b)])," patches.\n")
 
   maps_out = c("basin" = file.path(output_dir, "basin.tif"), "DEM" = file.path(tmp_dir, "dem_brch.tif"),"streams" = file.path(output_dir, "streams.tif"), "gauge_snap" = file.path(output_dir, "gauge_loc_snap.shp") )
   return(maps_out)

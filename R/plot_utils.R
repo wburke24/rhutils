@@ -24,8 +24,11 @@ plotpdf_allvars = function(out_dir,
                            pdfwidth = 7,
                            pdfheight = 7,
                            hide_legend = F,
+                           summary_plots = F,
+                           run_limit = 25,
                            runs = NULL) {
 
+  cat("Finding all files matching: '",pattern,"' in dir: ",out_dir,"\n", sep="")
   files_in = list.files(path = out_dir, pattern = pattern, full.names = T)
   if (length(files_in) == 0) {
     stop("No files found at specified output directory '",out_dir,"' using pattern '",pattern,"'")
@@ -35,8 +38,10 @@ plotpdf_allvars = function(out_dir,
 
   if (step == "monthly") {
     aggvars = c("year", "month")
+    cat("Aggregating to monthly.\n")
   } else if (step == "yearly") {
     aggvars = c("year")
+    cat("Aggregating to yearly.\n")
   } else {
     stop("Only valid steps are 'monthly' or 'yearly'")
   }
@@ -58,31 +63,52 @@ plotpdf_allvars = function(out_dir,
   if (!dir.exists("plots")) {
     dir.create("plots")
   }
+  # Summary plot when runs are too many
+  time_var <- if (step == "monthly") "year_month" else "year"
   
   pdfname = file.path("plots", paste0(gsub(".pdf","", out_name),"_", format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".pdf"  ) )
   pdf(pdfname, width = pdfwidth, height = pdfheight)
 
+  # get number of runs, do summary plots if too many runs
+  run_ct = length(unique(DT$run))
+
   for (i in seq_along(vars)) {
-    if (step == "monthly") {
+    # ------------------------------ SUMMARY PLOTS ------------------------------
+    if (run_ct > run_limit | summary_plots) {
+      # Calculate summaries
+      DT_summary <- DT[, .(
+          ymin = min(get(vars[i]), na.rm = TRUE),
+          ymax = max(get(vars[i]), na.rm = TRUE),
+          q25 = quantile(get(vars[i]), 0.25, na.rm = TRUE),
+          q75 = quantile(get(vars[i]), 0.75, na.rm = TRUE),
+          median = median(get(vars[i]), na.rm = TRUE),
+          mean = mean(get(vars[i]), na.rm = TRUE)), by = time_var]
+
+     tmpplot = ggplot(DT_summary, aes(x = .data[[time_var]])) +
+        geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = "Min–Max"), alpha = 0.3) +
+        geom_ribbon(aes(ymin = q25, ymax = q75, fill = "25th–75th Percentile"), alpha = 0.5) +
+        geom_line(aes(y = mean, color = "Mean"), linewidth = 1) +
+        geom_line(aes(y = median, color = "Median"), linetype = "dashed", linewidth = 1) +
+        scale_fill_manual(name = "Range", values = c("Min–Max" = "grey80", "25th–75th Percentile" = "grey50")) +
+        scale_color_manual(name = "Statistic", values = c("Mean" = "blue", "Median" = "black")) +
+        guides(fill = guide_legend(order = 1), color = guide_legend(order = 2)) +
+        ggtitle(paste0(vars[i], " (Summary)")) +
+        xlab("Year or Year-Month") +
+        ylab("M or kg/M2 or other")
+  
+
+  } else {
+      # ------------------------------ STANDARD PLOTS ------------------------------
       tmpplot = ggplot(DT) +
-        aes(x = year_month,
-            y = .data[[vars[i]]],
-            color = as.factor(run),
-            linetype = as.factor(run)) +
+        aes(
+          x = .data[[time_var]],
+          y = .data[[vars[i]]],
+          color = as.factor(run),
+          linetype = as.factor(run)
+        ) +
         geom_line() +
         ggtitle(vars[i]) +
-        xlab("Year Month") +
-        ylab("M or kg/M2 or other") +
-        labs(color = "Run", linetype = "Run")
-    } else if (step == "yearly") {
-      tmpplot = ggplot(DT) +
-        aes(x = year,
-            y = .data[[vars[i]]],
-            color = as.factor(run),
-            linetype = as.factor(run)) +
-        geom_line() +
-        ggtitle(vars[i]) +
-        xlab("Year Month") +
+        xlab("Year or Year-Month") +
         ylab("M or kg/M2 or other") +
         labs(color = "Run", linetype = "Run")
     }
@@ -90,11 +116,11 @@ plotpdf_allvars = function(out_dir,
     tmpplot
 
     if (hide_legend) {
-      tmpplot = tmpplot + theme(legend.position="none")
+      tmpplot = tmpplot + theme(legend.position = "none")
     }
-
     plot(tmpplot)
   }
+  
   suppressMessages(dev.off())
 
   cat("Wrote plots to PDF file: ",pdfname)

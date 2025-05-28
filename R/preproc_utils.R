@@ -2,51 +2,59 @@
 
 #' @export
 # plots the maps that you would input into rhessys preprocessing
-input_map_plotpdf <- function(map_dir,
+input_map_plotpdf <- function(
+  map_dir,
   template = NULL,
-  out_name = "map_plots", 
-  dest = "preprocessing", 
+  out_name = "map_plots",
+  dest = "preprocessing",
   map_exts = c(".tif|.tiff"),
-  pdfwidth = 7, 
-  pdfheight = 7) {
+  pdfwidth = 7,
+  pdfheight = 7
+) {
+  map_paths <- list.files(path = map_dir, pattern = map_exts, full.names = T)
+  map_names = basename(map_paths)
+  maps <- lapply(map_paths, rast)
 
-map_paths <- list.files(path = map_dir, pattern = map_exts, full.names = T)
-map_names = basename(map_paths)
-maps <- lapply(map_paths, rast)
+  # maplist = rbind(maplist,c("veg_parm_ID","NLCDv2.tif"))
 
-# maplist = rbind(maplist,c("veg_parm_ID","NLCDv2.tif"))
+  if (!is.null(template)) {
+    maplist = RHESSysPreprocessing::template_read(template = template)[[5]]
+    vegmaps = maplist[maplist[, 1] == "veg_parm_ID", 2]
+    soilmap = maplist[maplist[, 1] == "soil_parm_ID", 2]
+  }
 
-if (!is.null(template)) {
-maplist = RHESSysPreprocessing::template_read(template = template)[[5]]
-vegmaps = maplist[maplist[,1] == "veg_parm_ID",2]
-soilmap = maplist[maplist[,1] == "soil_parm_ID",2]
-}
+  # make the pdf of maps
+  pdfname <- file.path(
+    dest,
+    paste0(
+      gsub(".pdf", "", out_name),
+      "_",
+      format(Sys.time(), "%Y-%m-%d"),
+      ".pdf"
+    )
+  )
 
-# make the pdf of maps
-pdfname <- file.path(dest, paste0(
-gsub(".pdf", "", out_name),"_",
-format(Sys.time(), "%Y-%m-%d"), 
-".pdf"
-))
+  pdf(file = pdfname, width = pdfwidth, height = pdfheight)
+  for (i in seq_along(map_names)) {
+    if (map_names[i] %in% vegmaps) {
+      nlcdcols = FedData::nlcd_colors()
+      vals <- unique(maps[[i]])
+      df <- as.data.frame(nlcdcols[nlcdcols$ID %in% unlist(vals), ])
+      names(df)[names(df) == "ID"] = "value"
 
-pdf(file = pdfname, width = pdfwidth, height = pdfheight)
-for (i in seq_along(map_names)) {
+      plot(
+        maps[[i]],
+        main = map_names[i],
+        col = df[, c("value", "Color")],
+        type = "classes"
+      )
+    } else {
+      plot(maps[[i]], main = map_names[i])
+    }
+  }
+  suppressMessages(dev.off())
 
-if (map_names[i] %in% vegmaps) {
-nlcdcols = FedData::nlcd_colors()
-vals<-unique(maps[[i]])
-df<-as.data.frame(nlcdcols[nlcdcols$ID %in% unlist(vals),])
-names(df)[names(df)=="ID"] = "value"
-
-plot(maps[[i]], main = map_names[i], col = df[,c("value","Color")], type="classes")
-} else {
-plot(maps[[i]], main = map_names[i])
-}    
-}
-suppressMessages(dev.off())
-
-cat("Wrote pdf of map plots to ", pdfname,"\n")
-
+  cat("Wrote pdf of map plots to ", pdfname, "\n")
 }
 
 #' @export
@@ -74,4 +82,68 @@ check_template = function(template) {
   }
   
   cat("\n==================================================\n")
+}
+
+#' @export
+# fill missing map data
+fill_missing_raster_data = function(target_raster, mask_map, iterations = 1, window = 3, fun = "mean") {
+  if (!(fun == "mean" | fun == "mode")) {
+    stop("fun can only be mean or mode")
+  }
+
+  if (window %%2== 0) {
+    stop("window must be odd - its the side length of moving window to do mode over.")
+  }
+
+  Mode <- function(x) {
+    ux <- unique(x[!is.na(x)])
+    ux[which.max(tabulate(match(x, ux)))]
+  }
+
+  # fill.nan <- function(x, i=5) {
+  #   if(is.nan(x)[i]) {
+  #     return(Mode(x))
+  #   } else {
+  #     return(x[i])
+  #   }
+  # }
+
+  fill.na <- function(x, i=5) {
+    if(is.na(x)[i]) {
+      if (fun == "mode"){
+        return(Mode(x))
+      } else {
+        return(mean(x, na.rm=T))
+      }
+      
+    } else {
+      return(x[i])
+    }
+  }
+
+  cat("Masking target raster using mask map.\n")
+  r = mask(target_raster, mask_map)
+
+  missing_cells = sum(is.na(values(r)) & !is.na(values(mask_map)))
+  i = 0
+  # IF THERES MISSING DATA:
+  # fill in data missing from target (which is present in mask) with mode of surrounding rules, otionally iterate
+  # if (sum(is.na(values(r)) & !is.na(values(mask_map))) > 0)
+  # this is just doing it for everywhere thats na, then filling, this could be super slow, should probably just do it for the unmasked sections.
+
+  while (missing_cells > 0 & i < iterations) {
+    cat("Number of non-masked NA pixels:", missing_cells,"\n")
+    r = focal(r, w = window, fun = fill.na, na.policy = "only",i = ceiling((window^2)/2))
+    missing_cells = sum(is.na(values(r)) & !is.na(values(mask_map)))
+    i = i+1
+
+    cat("Missing cells filled via mode of neighbors.\n") 
+    cat("Remaining number of non-masked NA pixels:", missing_cells,"\n" )
+    cat("Remaining iterations: ",iterations-i,"\n")
+  }
+  r = mask(r, mask_map)
+  missing_cells = sum(is.na(values(r)) & !is.na(values(mask_map)))
+  cat("Re masking by mask map\n")
+  cat("Double check missing cells: ", missing_cells,"\n")
+  return(r)
 }
