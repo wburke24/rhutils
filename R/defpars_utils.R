@@ -212,10 +212,10 @@ get_varied_defpars_list = function(defpars) {
 }
 # ================================================================================
 #' @export
-defpars_list2df = function(defpars) {
+defpars_list2df = function (defpars) {
   df = data.frame(Parameter = sapply(defpars, "[[", 2), File = sapply(defpars, "[[", 1))
-  df = cbind(df, t(sapply(defpars, "[[", 3)))
-  names(df)[3:length(df[1,])] = paste0("Run_",c(1:(length(df[1,])-2)))
+  df = cbind(df, t( unname(as.data.frame(lapply(defpars, "[[", 3))) ))
+  names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
   return(df)
 }
 
