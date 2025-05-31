@@ -76,28 +76,65 @@ plotpdf_allvars = function(out_dir,
     # ------------------------------ SUMMARY PLOTS ------------------------------
     if (run_ct > run_limit | summary_plots) {
       # Calculate summaries
-      DT_summary <- DT[, .(
+      DT_summary <- DT[,
+        .(
           ymin = min(get(vars[i]), na.rm = TRUE),
           ymax = max(get(vars[i]), na.rm = TRUE),
           q25 = quantile(get(vars[i]), 0.25, na.rm = TRUE),
           q75 = quantile(get(vars[i]), 0.75, na.rm = TRUE),
           median = median(get(vars[i]), na.rm = TRUE),
-          mean = mean(get(vars[i]), na.rm = TRUE)), by = time_var]
+          mean = mean(get(vars[i]), na.rm = TRUE)
+        ),
+        by = time_var
+      ]
 
-     tmpplot = ggplot(DT_summary, aes(x = .data[[time_var]])) +
-        geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = "Min–Max"), alpha = 0.3) +
-        geom_ribbon(aes(ymin = q25, ymax = q75, fill = "25th–75th Percentile"), alpha = 0.5) +
+      mean_byrun <- DT[, .(mean = mean(get(vars[i]), na.rm = TRUE)), by = run]
+      meanrun = mean_byrun[which.min( abs(mean_byrun$mean - mean(mean_byrun$mean))) ,"run"]
+      maxrun = mean_byrun[which.max(mean_byrun$mean) ,"run"]
+      minrun = mean_byrun[which.min(mean_byrun$mean) ,"run"]
+      
+      tmpplot = ggplot(DT_summary, aes(x = .data[[time_var]])) +
+        geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = "Min–Max"), alpha = 0.5) +
+        geom_ribbon(aes(ymin = q25, ymax = q75, fill = "25th–75th Percentile"), alpha = 0.6) +
         geom_line(aes(y = mean, color = "Mean"), linewidth = 1) +
-        geom_line(aes(y = median, color = "Median"), linetype = "dashed", linewidth = 1) +
+        # geom_line(aes(y = median, color = "Median"), linetype = "dashed", linewidth = 1) +
         scale_fill_manual(name = "Range", values = c("Min–Max" = "grey80", "25th–75th Percentile" = "grey50")) +
-        scale_color_manual(name = "Statistic", values = c("Mean" = "blue", "Median" = "black")) +
+        scale_color_manual(name = "Statistic", values = c("Mean" = "blue", "Median" = "black", "Mean Run" = "dark green", "Max Run" = "dark red", "Min Run" = "dark red")) +
         guides(fill = guide_legend(order = 1), color = guide_legend(order = 2)) +
+        geom_line(data = DT[run == meanrun,], aes(x = .data[[time_var]], y = .data[[vars[i]]], color = "Mean Run"), linewidth = 1) +
+        geom_line(data = DT[run == maxrun,], aes(x = .data[[time_var]], y = .data[[vars[i]]], color = "Max Run" ), linewidth = 1) +
+        geom_line(data = DT[run == minrun,], aes(x = .data[[time_var]], y = .data[[vars[i]]], color = "Min Run" ), linewidth = 1) +
         ggtitle(paste0(vars[i], " (Summary)")) +
         xlab("Year or Year-Month") +
-        ylab("M or kg/M2 or other")
+        ylab("M or kg/M2 or other") + 
+        theme_minimal()
+      
+      # Get variable names
+      time_col <- time_var
+      value_col <- vars[i]
+
+      # Create label data.frames using standard evaluation
+      mean_label <- DT[run == meanrun, .SD[.N], .SDcols = c(time_col, value_col)]
+      setnames(mean_label, c(time_col, value_col), c("x", "y"))
+      max_label  <- DT[run == maxrun, .SD[.N], .SDcols = c(time_col, value_col)]
+      setnames(max_label, c(time_col, value_col), c("x", "y"))
+      min_label  <- DT[run == minrun, .SD[.N], .SDcols = c(time_col, value_col)]
+      setnames(min_label, c(time_col, value_col), c("x", "y"))
+
+      len = max(DT[[time_var]]) - min(DT[[time_var]])
+      nudge = (len/40)
+      lenv = max(DT[[value_col]]) - min(DT[[value_col]])
+      nudgev = lenv/40
+
+      tmpplot = tmpplot +
+        geom_text(data = as.data.frame(mean_label), aes(x = x, y = y, label = paste0("Run ",str_extract(meanrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = "darkgreen", inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev*2) +
+        geom_text(data =  as.data.frame(max_label), aes(x = x, y = y, label = paste0("Run ",str_extract(maxrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = "darkred", inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev) +
+        geom_text(data =  as.data.frame(min_label), aes(x = x, y = y, label = paste0("Run ",str_extract(minrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "top", color = "darkred", inherit.aes = FALSE, nudge_x = -nudge, nudge_y = -nudgev)
+      
+      tmpplot
   
 
-  } else {
+    } else {
       # ------------------------------ STANDARD PLOTS ------------------------------
       tmpplot = ggplot(DT) +
         aes(

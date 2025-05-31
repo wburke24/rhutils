@@ -310,3 +310,99 @@ make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
   param_list = apply(param_df, 1, FUN = function(X,Y){list(Def_file = Y, Variable = unname(X[1]), Value = unname(X[2]))}, def_file )
   return(param_list)
 }
+
+
+# ================================================================================
+# parameter sensetivity, for each output var
+#' @export
+pars_sens = function(out_dir, input_def_pars, sortby = "Mean") {
+
+  sortops = c("Mean", "Max", "Min", "Avg Annual Max", "Avg Annual Min")
+  if (!sortby %in% sortops) {
+    stop(paste0("sortby arg must be one of: ", paste0(sortops, collapse = " ")))
+  }
+  sortnum = which(sortops == sortby)
+
+  # ============================== GET DEF PARS IN USABLE FORMAT ==============================
+  defpar_df = defpars_list2df(input_def_pars)
+  defpar_df_t = as.data.frame(t(defpar_df[,c(3:ncol(defpar_df))]))
+  names(defpar_df_t) = paste0(defpar_df$Parameter,"--", defpar_df$File)
+
+  # ============================== GET RESPONSE VARS/METRICS ==============================
+  sim_DT = get_basin_daily(out_dir)
+  vars = names(sim_DT)[!names(sim_DT) %in% c("day", "month", "year", "basinID", "run", "date", "wy", "yd")]
+  # Ensure sim_DT is a data.table
+  setDT(sim_DT)
+  # separate dfs is just easier somehow
+  mean = sim_DT[, lapply(.SD, function(x) mean = mean(x, na.rm = TRUE)), by = run, .SDcols = vars]
+  min = sim_DT[, lapply(.SD, function(x) min = min(x, na.rm = TRUE)), by = run, .SDcols = vars]
+  max = sim_DT[, lapply(.SD, function(x) max = max(x, na.rm = TRUE)), by = run, .SDcols = vars]
+  # ASSUME RUN ENDS WITH RUN NUMBER
+  mean$run_num = as.numeric(str_extract(mean$run,"(?<=_)\\d+$"))
+  mean = mean[order(mean$run_num),]
+  min$run_num = as.numeric(str_extract(min$run,"(?<=_)\\d+$"))
+  min = min[order(min$run_num),]
+  max$run_num = as.numeric(str_extract(max$run,"(?<=_)\\d+$"))
+  max = max[order(max$run_num),]
+  # Compute annual max and min per run and year
+  an_max = sim_DT[, lapply(.SD, function(x) annual_max = max(x, na.rm = TRUE)), by = .(run, year), .SDcols = vars]
+  avg_an_max = an_max[, lapply(.SD, function(x) avg_annual_max = mean(x, na.rm = TRUE)), by = .(run), .SDcols = vars]
+  an_min = sim_DT[, lapply(.SD, function(x) annual_min = min(x, na.rm = TRUE)), by = .(run, year), .SDcols = vars]
+  avg_an_min = an_min[, lapply(.SD, function(x) avg_annual_min = mean(x, na.rm = TRUE)), by = .(run), .SDcols = vars]
+
+  avg_an_max$run_num = as.numeric(str_extract(avg_an_max$run,"(?<=_)\\d+$"))
+  avg_an_max = avg_an_max[order(avg_an_max$run_num),]
+  avg_an_min$run_num = as.numeric(str_extract(avg_an_min$run,"(?<=_)\\d+$"))
+  avg_an_min = avg_an_min[order(avg_an_min$run_num),]
+
+  src_mean = lapply(vars, function(i) {src(X = defpar_df_t, y = mean[[i]])})
+  names(src_mean) = vars
+  src_min = lapply(vars, function(i) {src(X = defpar_df_t, y = min[[i]])})
+  names(src_min) = vars
+  src_max = lapply(vars, function(i) {src(X = defpar_df_t, y = max[[i]])})
+  names(src_max) = vars
+  src_avg_an_max = lapply(vars, function(i) {src(X = defpar_df_t, y = avg_an_max[[i]])})
+  names(src_avg_an_max) = vars
+  src_avg_an_min = lapply(vars, function(i) {src(X = defpar_df_t, y = avg_an_min[[i]])})
+  names(src_avg_an_min) = vars
+
+  out = mapply(
+    function(avg, max, min, anmax, anmin, sortnum) {
+      avgdf = avg$SRC
+      avgdf$name = rownames(avgdf)
+      rownames(avgdf) = NULL
+      maxdf = max$SRC
+      maxdf$name = rownames(maxdf)
+      rownames(maxdf) = NULL
+      mindf = min$SRC
+      mindf$name = rownames(mindf)
+      rownames(mindf) = NULL
+      anmaxdf = anmax$SRC
+      anmaxdf$name = rownames(anmaxdf)
+      rownames(anmaxdf) = NULL
+      anmindf = anmin$SRC
+      anmindf$name = rownames(anmindf)
+      rownames(anmindf) = NULL
+
+      outdf = cbind(
+        avgdf[order(avgdf$name),c(2,1)],
+        maxdf[order(maxdf$name),1],
+        mindf[order(mindf$name),1],
+        anmaxdf[order(anmaxdf$name),1],
+        anmindf[order(anmindf$name),1]
+      )
+      names(outdf) = c("Parameter", "Mean", "Max", "Min", "Avg Annual Max", "Avg Annual Min")
+      outdf = outdf[order(abs(outdf[,sortnum + 1]), decreasing = T ),]
+      return(outdf)
+    },
+    src_mean,
+    src_max,
+    src_min,
+    src_avg_an_max,
+    src_avg_an_min,
+    sortnum,
+    SIMPLIFY = F
+  )
+  return(out)
+
+}
