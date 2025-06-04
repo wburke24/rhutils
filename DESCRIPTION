@@ -1,7 +1,7 @@
 Package: rhutils
 Type: Package
 Title: Utilities for RHESSys and general coding.
-Version: 0.3.0
+Version: 0.4.0
 Author: Will Burke
 Maintainer: Will Burke <burke24@gmail.com>
 Description: Functions for use with RHESSys inputs and outputs. 
