@@ -1,5 +1,7 @@
 # def pars utils
-# ================================================================================
+
+#  Read - Write ================================================================================
+
 #' @export
 read_def = function(def_file) {
   def_read = readLines(def_file, warn = FALSE)
@@ -14,29 +16,95 @@ read_def = function(def_file) {
 
 # ================================================================================
 #' @export
-write_param_table = function(input_def_pars, outfile_basename = "all_def_changes") {
-  vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
-  param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
-  names(param_table)[3:length(param_table[1,])] = paste0("run_",c(1:(length(param_table[1,])-2)))
-  outname = paste0(outfile_basename,"_" ,gsub( ":", ".", sub( " ", "_", Sys.time())), ".params"  )
-  write.csv(param_table, file = outname)
-  cat("Wrote table of parameter changes to: ", outname)
+read_pars_table = function(out_dir) {
+  parstable = list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T )
+  if (length(parstable) == 0) {
+    stop("Couldn't find any pars tables")
+  } else if (length(parstable) > 1) {
+    stop("More than 1 pars table found")
+  }
+  inputpars = read.csv(parstable)
+  if (names(inputpars)[1] == "X") {
+    inputpars = inputpars[,-1]
+  }
+  return(inputpars)
 }
 
 # ================================================================================
 #' @export
-get_param_table = function(input_def_pars) {
-  vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
-  if (length(input_def_pars[[1]][[3]]) == 1) {
-    param_table = cbind(vars_defs, sapply(input_def_pars, "[[", 3))
-  } else {
-    param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
-  }
-  names(param_table)[3:length(param_table[1,])] = paste0("run_",c(1:(length(param_table[1,])-2)))
-  return(param_table)
+defpars_csv2list = function(defpar_csv) {
+  df = read.csv(defpar_csv)
+  vcol = which(names(df) == "Variable")
+  dcol = which(names(df) == "Def_file")
+  r1col = max(vcol, dcol) + 1
+  def_list = apply(df, 1, FUN = function(X){list(Def_file = unname(X[dcol]), Variable = unname(X[vcol]), Value = unname(X[r1col:length(X)]))} )
+  return(def_list)
 }
 
 # ================================================================================
+#' @export
+write_param_table = function(input_def_pars, outfile_basename = "all_def_changes") {
+  vars_defs = data.frame(Variable = sapply(input_def_pars, "[[", 2), Def_file = sapply(input_def_pars, "[[", 1))
+  param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
+  names(param_table)[3:length(param_table[1,])] = paste0("Run_",c(1:(length(param_table[1,])-2)))
+  outname = paste0(outfile_basename,"_" ,gsub( ":", ".", sub( " ", "_", Sys.time())), ".params"  )
+  write.csv(param_table, file = outname)
+  cat("Wrote table of parameter changes to: ", outname)
+}
+IOin_def_pars_simple()
+# ================================================================================
+#only works for single def pars
+#' @export
+write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NULL) {
+  def_pars_df = data.frame(matrix(unlist(input_def_pars), nrow = length(input_def_pars), byrow = T))
+  for (f in unique(def_pars_df$X1)) {
+    # subset def file pars and put in format expected by the change_def_file function
+    def_par_subset = data.frame(t(def_pars_df[def_pars_df$X1 == f,3]))
+    names(def_par_subset) = def_pars_df[def_pars_df$X1 == f,2]
+    new_file = change_def_file(def_file = f, par_sets = def_par_subset, file_name_ext = filename_ext)
+  }
+}
+
+#  Transform ================================================================================
+
+# makes a table from list - deprec
+# #' @export
+# get_param_table = function(input_def_pars) {
+#   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
+#   if (length(input_def_pars[[1]][[3]]) == 1) {
+#     param_table = cbind(vars_defs, sapply(input_def_pars, "[[", 3))
+#   } else {
+#     param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
+#   }
+#   names(param_table)[3:length(param_table[1,])] = paste0("run_",c(1:(length(param_table[1,])-2)))
+#   return(param_table)
+# }
+
+# ================================================================================
+#' @export
+defpars_list2df = function (defpars) {
+  df = data.frame(Variable = sapply(defpars, "[[", 2), Def_file = sapply(defpars, "[[", 1))
+  df = cbind(df, t( unname(as.data.frame(lapply(defpars, "[[", 3))) ))
+  names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
+  return(df)
+}
+
+# ================================================================================
+# transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr
+#' @export
+defpar_df_t2parcols = function(defpar_df) {
+  df_t = as.data.frame(t(defpar_df[, names(defpar_df) != c("Parameter","File")]))
+  colnames(df_t) = paste0(defpar_df$Parameter,"__",defpar_df$File)
+
+  # if all are numeric, switch
+  validnum = sapply(df_t,function(X) {all(!is.na(suppressWarnings(as.numeric(X)))) } )
+  df_t[,validnum]
+  df_t[,validnum] = sapply(df_t[,validnum], as.numeric)
+  return(df_t)
+}
+
+#  Extract/Subset ================================================================================
+
 #' @export
 copy_param_by_var = function(pars, copy_var, replace_var) {
   tmp = pars[[which(lapply(pars,"[[",2 ) == copy_var)]]
@@ -68,6 +136,114 @@ fill_rep_pars = function(pars_list) {
 }
 
 # ================================================================================
+# duplicate soil def pars for multiple soils
+#' @export
+dup_soil_pars = function(input_def_pars, input_hdr) {
+  par_df = as.data.frame(t(sapply(input_def_pars, function(X){X[1:2]})))
+  names(par_df) = c("Def_file", "Variable")
+  par_df$values = lapply(input_def_pars,"[[", 3)
+
+  if (length(input_hdr$soil_def) <= 1) {
+    cat("One or less soil definition files listed in input header, cannot duplicate soil def pars.")
+    return(input_def_pars)
+  }
+  if (length(input_hdr$soil_def) > 1 & all(input_hdr$soil_def %in% par_df$Def_file)) {
+    cat("Multiple soil definition files already being modified in input definition pars, don't want to overwrite/unclear which to dup.")
+    return(input_def_pars)
+  }
+  soil_i = which(par_df$Def_file %in% input_hdr$soil_def)
+  def_cur = input_hdr$soil_def[input_hdr$soil_def %in% par_df$Def_file]
+  def2dup = input_hdr$soil_def[!input_hdr$soil_def %in% par_df$Def_file]
+  pars_added = lapply(def2dup, function(def2dup, cur_pars) {
+    lapply(cur_pars, function(X,Y) {X[[1]] = Y; return(X)},def2dup)
+  }, cur_pars = input_def_pars[soil_i])
+  new_input_def_pars = c(input_def_pars, unlist(pars_added, recursive = F))
+  return(new_input_def_pars)
+}
+# ================================================================================
+#' @export
+get_only_varied_defpars_list = function(defpars) {
+  num_vals = unlist(lapply(defpars, FUN = function(X){length(X[[3]])}))
+  if (all(num_vals == 1)) {
+    cat("Only 1 value for all pars")
+    return(defpars)
+  }
+  num_unique = unlist(lapply(defpars, FUN = function(X){length(unique(X[[3]]))}))
+  if (all(num_unique == 1)) {
+    cat("Def pars are all unique")
+    return(defpars)
+  }
+  varied_pars = defpars[num_unique > 1]
+  return(varied_pars)
+}
+
+# ================================================================================
+# get new parlist based on id/num of existing par list
+#' @export
+defpar_extract_byrunnum = function(pars_list, runnum) {
+  extfun = function(X,Y) {
+    X[[3]] = X[[3]][Y]
+    return(X)
+  }
+  newparlist = lapply(pars_list,extfun,runnum)
+  return(newparlist)
+}
+
+# ================================================================================
+# param from def file
+#' @export
+get_def_par = function(def_file, parameter = NULL) {
+  tmp = read_def(def_file)
+  if (is.null(parameter)) {
+    cat("No parameter indicated, parameters in def file:\n")
+    print(tmp$names)
+    return(tmp$names)
+  }
+  if (sum(tmp$names == parameter) == 0) {
+    cat("No parameter in file matching '",parameter,"'. Parameters in def file:\n")
+    print(tmp$names)
+    return(NULL)
+  }
+  parval = tmp[tmp$names == parameter,"pars"]
+  return(parval)
+}
+# ================================================================================
+# list of def file, param, values, from current def file
+#' @export
+make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
+  # defaults = "~/Repos/RHESSys-develop/rhessys/init/construct_stratum_defaults.c"
+  def = read_def(def_file)
+
+  if (!all(parameters %in% def$names)) {
+    cat("Not all parameters found in def file, using defaults if supplied.\n")
+    parameters_in_def = parameters[parameters %in% def$names]
+    par_vals = mapply(get_def_par, def_file, parameters_in_def, USE.NAMES = F)
+    param_df = data.frame(Variable = parameters_in_def, Value = par_vals)
+
+    if (!is.null(defaults)) {
+      missing_pars = parameters[!parameters %in% def$names]
+      allpars = check_params(rh_file = defaults, def_file = def_file)
+      if (!all(missing_pars %in% allpars$Name)) {
+        cat("Not all missing parameters found in defaults - likely invalid.\n")
+        missing_pars = missing_pars[missing_pars %in% allpars$Name]
+      }
+      tmp = allpars[allpars$Name %in% missing_pars, ]
+      missing_par_df = data.frame(Variable = tmp$Name, Value = tmp$DefaultValue)
+      param_df = rbind(param_df, missing_par_df)
+    } else {
+      cat("No defaults supplied, using only parameters found in def_file.\n")
+      # parameters = parameters[parameters %in% def$names]
+    }
+  } else {
+    par_vals = mapply(get_def_par, def_file, parameters, USE.NAMES = F)
+    param_df = data.frame(Variable = parameters, Value = par_vals)
+  }
+  # make into a list for input into ioinR
+  param_list = apply(param_df, 1, FUN = function(X,Y){list(Def_file = Y, Variable = unname(X[1]), Value = unname(X[2]))}, def_file )
+  return(param_list)
+}
+
+#  Statistics/Param Manipulation ================================================================================
 # mean of n def pars
 #' @export
 defpar_mean = function(X) {
@@ -78,13 +254,6 @@ defpar_mean = function(X) {
   }
   return(X)
 }
-
-# ================================================================================
-# get_def_table = function(def_pars_list) {
-#   df = unname(as.data.frame(lapply(def_pars_list, "[[", 3)))
-#   names(df) = sapply(def_pars_list, function(X) {paste0(X[[1]],"_",X[[2]])})
-#   return(df)
-# }
 
 # ================================================================================
 #' @export
@@ -122,45 +291,6 @@ pct_rng = function(X, pct) {
 }
 
 # ================================================================================
-#only works for single def pars
-#' @export
-write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NULL) {
-  def_pars_df = data.frame(matrix(unlist(input_def_pars), nrow = length(input_def_pars), byrow = T))
-  for (f in unique(def_pars_df$X1)) {
-    # subset def file pars and put in format expected by the change_def_file function
-    def_par_subset = data.frame(t(def_pars_df[def_pars_df$X1 == f,3]))
-    names(def_par_subset) = def_pars_df[def_pars_df$X1 == f,2]
-    new_file = change_def_file(def_file = f, par_sets = def_par_subset, file_name_ext = filename_ext)
-  }
-}
-
-# ================================================================================
-# duplicate soil def pars for multiple soils
-#' @export
-dup_soil_pars = function(input_def_pars, input_hdr) {
-  par_df = as.data.frame(t(sapply(input_def_pars, function(X){X[1:2]})))
-  names(par_df) = c("Def_file", "Variable")
-  par_df$values = lapply(input_def_pars,"[[", 3)
-
-  if (length(input_hdr$soil_def) <= 1) {
-    cat("One or less soil definition files listed in input header, cannot duplicate soil def pars.")
-    return(input_def_pars)
-  }
-  if (length(input_hdr$soil_def) > 1 & all(input_hdr$soil_def %in% par_df$Def_file)) {
-    cat("Multiple soil definition files already being modified in input definition pars, don't want to overwrite/unclear which to dup.")
-    return(input_def_pars)
-  }
-  soil_i = which(par_df$Def_file %in% input_hdr$soil_def)
-  def_cur = input_hdr$soil_def[input_hdr$soil_def %in% par_df$Def_file]
-  def2dup = input_hdr$soil_def[!input_hdr$soil_def %in% par_df$Def_file]
-  pars_added = lapply(def2dup, function(def2dup, cur_pars) {
-    lapply(cur_pars, function(X,Y) {X[[1]] = Y; return(X)},def2dup)
-  }, cur_pars = input_def_pars[soil_i])
-  new_input_def_pars = c(input_def_pars, unlist(pars_added, recursive = F))
-  return(new_input_def_pars)
-}
-
-# ================================================================================
 # create parameter set based on all combinations of varying input vars
 #' @export
 def_par_allcomb = function(defpars) {
@@ -178,141 +308,7 @@ def_par_allcomb = function(defpars) {
   return(defpars)
 }
 
-# ================================================================================
-#' @export
-read_pars_table = function(out_dir) {
-  parstable = list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T )
-  if (length(parstable) == 0) {
-    stop("Couldn't find any pars tables")
-  } else if (length(parstable) > 1) {
-    stop("More than 1 pars table found")
-  }
-  inputpars = read.csv(parstable)
-  if (names(inputpars)[1] == "X") {
-    inputpars = inputpars[,-1]
-  }
-  return(inputpars)
-}
-
-# ================================================================================
-#' @export
-get_varied_defpars_list = function(defpars) {
-  num_vals = unlist(lapply(defpars, FUN = function(X){length(X[[3]])}))
-  if (all(num_vals == 1)) {
-    cat("Only 1 value for all pars")
-    return(defpars)
-  }
-  num_unique = unlist(lapply(defpars, FUN = function(X){length(unique(X[[3]]))}))
-  if (all(num_unique == 1)) {
-    cat("Def pars are all unique")
-    return(defpars)
-  }
-  varied_pars = defpars[num_unique > 1]
-  return(varied_pars)
-}
-# ================================================================================
-#' @export
-defpars_list2df = function (defpars) {
-  df = data.frame(Parameter = sapply(defpars, "[[", 2), File = sapply(defpars, "[[", 1))
-  df = cbind(df, t( unname(as.data.frame(lapply(defpars, "[[", 3))) ))
-  names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
-  return(df)
-}
-
-# ================================================================================
-#' @export
-defpars_csv2list = function(defpar_csv) {
-  df = read.csv(defpar_csv)
-  vcol = which(names(df) == "variable")
-  dcol = which(names(df) == "def_file")
-  r1col = max(vcol, dcol) + 1
-  def_list = apply(df, 1, FUN = function(X){list(Def_file = unname(X[dcol]), Variable = unname(X[vcol]), Value = unname(X[r1col:length(X)]))} )
-  return(def_list)
-}
-
-# ================================================================================
-# transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr
-#' @export
-defpar_df_t2parcols = function(defpar_df) {
-  df_t = as.data.frame(t(defpar_df[, names(defpar_df) != c("Parameter","File")]))
-  colnames(df_t) = paste0(defpar_df$Parameter,"__",defpar_df$File)
-
-  # if all are numeric, switch
-  validnum = sapply(df_t,function(X) {all(!is.na(suppressWarnings(as.numeric(X)))) } )
-  df_t[,validnum]
-  df_t[,validnum] = sapply(df_t[,validnum], as.numeric)
-  return(df_t)
-}
-
-# ================================================================================
-# get new parlist based on id/num of existing par list
-#' @export
-defpar_extract_byrunnum = function(pars_list, runnum) {
-  extfun = function(X,Y) {
-    X[[3]] = X[[3]][Y]
-    return(X)
-  }
-  newparlist = lapply(pars_list,extfun,runnum)
-  return(newparlist)
-}
-
-# ================================================================================
-# param from def file
-#' @export
-get_def_par = function(def_file, parameter = NULL) {
-  tmp = read_def(def_file)
-  if (is.null(parameter)) {
-    cat("No parameter indicated, parameters in def file:\n")
-    print(tmp$names)
-    return(tmp$names)
-  }
-  if (sum(tmp$names == parameter) == 0) {
-    cat("No parameter in file matching '",parameter,"'. Parameters in def file:\n")
-    print(tmp$names)
-    return(NULL)
-  }
-  parval = tmp[tmp$names == parameter,"pars"]
-  return(parval)
-}
-
-# ================================================================================
-# list of def file, param, values, from current def file
-#' @export
-make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
-  # defaults = "~/Repos/RHESSys-develop/rhessys/init/construct_stratum_defaults.c"
-  def = read_def(def_file)
-
-  if (!all(parameters %in% def$names)) {
-    cat("Not all parameters found in def file, using defaults if supplied.\n")
-    parameters_in_def = parameters[parameters %in% def$names]
-    par_vals = mapply(get_def_par, def_file, parameters_in_def, USE.NAMES = F)
-    param_df = data.frame(Variable = parameters_in_def, Value = par_vals)
-
-    if (!is.null(defaults)) {
-      missing_pars = parameters[!parameters %in% def$names]
-      allpars = check_params(rh_file = defaults, def_file = def_file)
-      if (!all(missing_pars %in% allpars$Name)) {
-        cat("Not all missing parameters found in defaults - likely invalid.\n")
-        missing_pars = missing_pars[missing_pars %in% allpars$Name]
-      }
-      tmp = allpars[allpars$Name %in% missing_pars, ]
-      missing_par_df = data.frame(Variable = tmp$Name, Value = tmp$DefaultValue)
-      param_df = rbind(param_df, missing_par_df)
-    } else {
-      cat("No defaults supplied, using only parameters found in def_file.\n")
-      # parameters = parameters[parameters %in% def$names]
-    }
-  } else {
-    par_vals = mapply(get_def_par, def_file, parameters, USE.NAMES = F)
-    param_df = data.frame(Variable = parameters, Value = par_vals)
-  }
-  # make into a list for input into ioinR
-  param_list = apply(param_df, 1, FUN = function(X,Y){list(Def_file = Y, Variable = unname(X[1]), Value = unname(X[2]))}, def_file )
-  return(param_list)
-}
-
-
-# ================================================================================
+#  Sensetivity ================================================================================
 # parameter sensetivity, for each output var
 #' @export
 pars_sens = function(out_dir, input_def_pars, sortby = "Mean") {
