@@ -66,6 +66,7 @@ plotpdf_allvars = function(out_dir,
   if (auto_vars) {
     if (all(c("evaporation","evaporation_surf","transpiration_unsat_zone","transpiration_sat_zone") %in% vars)) {
       DT$evapotranspiration = DT$evaporation + DT$evaporation_surf +DT$transpiration_unsat_zone + DT$transpiration_sat_zone
+      vars = c(vars, "evapotranspiration")
     }
   }
   
@@ -110,7 +111,7 @@ plotpdf_allvars = function(out_dir,
       DT[, (vars[i]) := get(vars[i]) * 1000]
     } else if (vars[i] %in% output_vars_carbon) {
       ylabel = c("kgC/m2")
-    } else if (output_vars_nitrogen) {
+    } else if (vars[i] %in% output_vars_nitrogen) {
       ylabel = c("kgN/m2")
     } else {
       ylabel = "M or kg/M2 or other"
@@ -136,6 +137,10 @@ plotpdf_allvars = function(out_dir,
       meanrun = mean_byrun[which.min( abs(mean_byrun$mean - mean(mean_byrun$mean))) ,"run"]
       maxrun = mean_byrun[which.max(mean_byrun$mean) ,"run"]
       minrun = mean_byrun[which.min(mean_byrun$mean) ,"run"]
+
+      meancol = "#64fc64"
+      maxcol = "#fc6464"
+      mincol = "#6464fc"
       
       # ==================== GGPLOT ====================
       tmpplot = ggplot(DT_summary, aes(x = .data[[time_var]])) +
@@ -144,7 +149,8 @@ plotpdf_allvars = function(out_dir,
         geom_line(aes(y = mean, color = "Mean"), linewidth = 1) +
         # geom_line(aes(y = median, color = "Median"), linetype = "dashed", linewidth = 1) +
         scale_fill_manual(name = "Range", values = c("Min–Max" = "grey80", "25th–75th Percentile" = "grey50")) +
-        scale_color_manual(name = "Statistic", values = c("Mean" = "blue", "Median" = "black", "Mean Run" = "dark green", "Max Run" = "dark red", "Min Run" = "dark red")) +
+        scale_color_manual(name = "Statistic", values = c("Mean" = "black", "Mean Run" = meancol, 
+      "Max Run" = maxcol, "Min Run" = mincol)) +
         guides(fill = guide_legend(order = 1), color = guide_legend(order = 2)) +
         geom_line(data = DT[run == meanrun,], aes(x = .data[[time_var]], y = .data[[vars[i]]], color = "Mean Run"), linewidth = 1) +
         geom_line(data = DT[run == maxrun,], aes(x = .data[[time_var]], y = .data[[vars[i]]], color = "Max Run" ), linewidth = 1) +
@@ -170,9 +176,9 @@ plotpdf_allvars = function(out_dir,
 
       # add labels to plot
       tmpplot = tmpplot +
-        geom_text(data = as.data.frame(mean_label), aes(x = x, y = y, label = paste0("Run ",str_extract(meanrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = "darkgreen", inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev*2) +
-        geom_text(data =  as.data.frame(max_label), aes(x = x, y = y, label = paste0("Run ",str_extract(maxrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = "darkred", inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev) +
-        geom_text(data =  as.data.frame(min_label), aes(x = x, y = y, label = paste0("Run ",str_extract(minrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "top", color = "darkred", inherit.aes = FALSE, nudge_x = -nudge, nudge_y = -nudgev)
+        geom_text(data = as.data.frame(mean_label), aes(x = x, y = y, label = paste0("Run ",str_extract(meanrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = meancol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev*2) +
+        geom_text(data =  as.data.frame(max_label), aes(x = x, y = y, label = paste0("Run ",str_extract(maxrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = maxcol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev) +
+        geom_text(data =  as.data.frame(min_label), aes(x = x, y = y, label = paste0("Run ",str_extract(minrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "top", color = mincol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = -nudgev)
       
       # tmpplot
 
