@@ -2,7 +2,7 @@
 #' 
 #' Sensetivity of of calibration evaluation statistics (NSE, NSElog, PBIAS, RMSE, r2) to changes in defintion file parameters.
 #' @export
-cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T) {
+cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T, def_changes_by_stat = F) {
 
   sortops = c("NSE", "NSElog", "PBIAS", "RMSE", "r2")
   if (!sortby %in% sortops) {
@@ -37,6 +37,15 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
     cat("Adding base_flow to streamflow when calculating eval stats.")
   } 
   eval = cal_eval(Qsim = sim_DT, Qobs = obs_source, monthly = monthly)
+
+  # cols are stats and params, rows are runs, harder to read this one
+  eval_par_comb = cbind(eval, defpar_df_t)
+  if (def_changes_by_stat) {
+    return(eval_par_comb)
+  }
+  #alt
+  # statspars = names(eval_par_comb)
+  # t(eval_par_comb)
 
   sens_nse = sensitivity::src(X = defpar_df_t, y = eval$NSE)
   sens_NSElog = sensitivity::src(X = defpar_df_t, y = eval$NSElog)

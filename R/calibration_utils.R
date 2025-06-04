@@ -6,8 +6,8 @@
 def_changes_by_evaldf = function(defpar_df, eval, stat = "NSE") {
   # assume that eval is already ordered by calibration run id
 
-  defpar_parfile = defpar_df[,c("Parameter","File")]
-  defpar_df_pars = defpar_df[, names(defpar_df) != c("Parameter","File")]
+  defpar_parfile = defpar_df[,c("Variable","Def_file")]
+  defpar_df_pars = defpar_df[, names(defpar_df) != c("Variable","Def_file")]
   # double check they're in order, jk they always should be
   # names(defpar_df_pars) = names(defpar_df_pars)[order(as.numeric(gsub("Run_","",names(defpar_df_pars))))]
 
@@ -25,10 +25,10 @@ def_changes_by_evaldf = function(defpar_df, eval, stat = "NSE") {
   parsstats = rbind( evaltrans, defpar_df_pars)
 
   # combine the names, duplicate the stat for thw two cols
-  comb_names = rbind(data.frame(Parameter = statnames,File = statnames), defpar_parfile)
+  comb_names = rbind(data.frame(Variable = statnames,Def_file = statnames), defpar_parfile)
 
   # order the stats and pars by the selected stat
-  parsstats = parsstats[,order(as.numeric(unlist(unname(parsstats[comb_names$Parameter == stat,]))), decreasing = T)]
+  parsstats = parsstats[,order(as.numeric(unlist(unname(parsstats[comb_names$Variable == stat,]))), decreasing = T)]
 
   comb_parsstats = cbind(comb_names, parsstats)
 
@@ -61,40 +61,69 @@ def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
   return(chgvars_stat)
 }
 
+# ================================================================================
+# #' @export
+# def_changes_by_eval_stat = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T) {
+
+#   sortops = c("NSE", "NSElog", "PBIAS", "RMSE", "r2")
+#   if (!sortby %in% sortops) {
+#     stop(paste0("sortby arg must be one of: ", paste0(sortops, collapse = " ")))
+#   }
+#   sortnum = which(sortops == sortby)
+
+#   # ============================== GET DEF PARS IN USABLE FORMAT ==============================
+#   if (is.null(input_def_pars)) {
+#     defpar_df = read_pars_table(out_dir = out_dir)
+#   } else if (is.list(input_def_pars)) {
+#     defpar_df = defpars_list2df(input_def_pars)
+#   } else {
+#     stop("Missing defpars, either use input_def_pars to input a R list, or include an 'all_def_changes' csv table in the out_dir/params dir.\n")
+#   }
+#   defpar_df_t = as.data.frame(t(defpar_df[,c(3:ncol(defpar_df))]))
+#   names(defpar_df_t) = paste0(defpar_df$Variable,"--", defpar_df$Def_file)
+
+#   par_lens = apply(defpar_df_t,MARGIN = 2, function(X) length(unique(X)))
+#   if (any(par_lens == 1)) {
+#     cat("Omitting parameters that do not vary across runs.\n")
+#     defpar_df_t = defpar_df_t[,par_lens != 1 ]
+#   }
+
+#   # ============================== GET CAL EVALUATION STATS ==============================
+#   sim_DT = get_basin_daily(out_dir)
+#   vars = names(sim_DT)[!names(sim_DT) %in% c("day", "month", "year", "basinID", "run", "date", "wy", "yd")]
+#   if (!"streamflow" %in% vars) stop("Must have streamflow in output.")
+#   if ("base_flow" %in% vars & add_base){
+#     sim_DT$streamflow = sim_DT$streamflow  + sim_DT$base_flow
+#     cat("Adding base_flow to streamflow when calculating eval stats.")
+#   } 
+#   eval = cal_eval(Qsim = sim_DT, Qobs = obs_source, monthly = monthly)
+
+
+
+#   return(chgvars_stat)
+# }
 
 # ================================================================================
-#' @export
-defpars_sens = function(defpars, eval, stat = "NSE") {
+# #' @export
+# defpars_sens = function(defpars, eval, stat = "NSE") {
 
-  if (is.data.frame(defpars)) {
-    defpar_df = defpars
-  } else if (is.list(defpars)) {
-    defpar_df = defpars_list2df(defpars)
-  } else {
-    cat("Input defpar must be a list or dataframe")
-    return(NULL)
-  }
-  eval = as.data.frame(eval)
+#   if (is.data.frame(defpars)) {
+#     defpar_df = defpars
+#   } else if (is.list(defpars)) {
+#     defpar_df = defpars_list2df(defpars)
+#   } else {
+#     cat("Input defpar must be a list or dataframe")
+#     return(NULL)
+#   }
+#   eval = as.data.frame(eval)
 
-  pars = defpar_df_t2parcols(defpar_df)
+#   pars = defpar_df_t2parcols(defpar_df)
 
-  # remove pars that don't vary
-  parsvary = apply(pars,2,FUN = function(X){length(unique(X)) > 1})
-  pars_diff = pars[,unname(parsvary)]
-  srcout = sensitivity::src(pars_diff,eval[,stat])
+#   # remove pars that don't vary
+#   parsvary = apply(pars,2,FUN = function(X){length(unique(X)) > 1})
+#   pars_diff = pars[,unname(parsvary)]
+#   srcout = sensitivity::src(pars_diff,eval[,stat])
 
-  return(srcout)
-}
-
-
-
-# function(out_dir, eval) {
-#   inputpars = get_param_table(out_dir)
-#
-#   pars = t(inputpars[,-c(1,2)])
-#   colnames(pars) = paste0(inputpars$variable,"__",inputpars$def_file)
-#   lenunq = apply(pars, 2, function(X) length(unique(X)))
-#   inputpars_diff = pars[, lenunq > 1]
-#   srcout = sensitivity::src(inputpars_diff, eval$NSE)
 #   return(srcout)
 # }
+
