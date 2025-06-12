@@ -62,6 +62,21 @@ def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
 }
 
 # ================================================================================
+#' @export
+par_ranges_by_pctle = function(defchg_nse, pct = .90) {
+  x = as.numeric(defchg_nse[1,3:ncol(defchg_nse)])
+  pctl = quantile(x = x, probs = pct)
+  tmp = defchg_nse[,3:ncol(defchg_nse)]
+  def90 = tmp[,tmp[1,] >= pctl]
+  ranges = data.frame(min = as.numeric(apply(def90,1,min)), max = as.numeric(apply(def90,1,max)))
+  # signif(ranges, digits = 5)
+  ranges = cbind(variable = defchg_nse[,1],ranges)
+  cat("90th Percentile NSE - Ranges of Pars\n------------------------------------\n")
+  print(ranges)
+  return(ranges)
+}
+
+# ================================================================================
 # #' @export
 # def_changes_by_eval_stat = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T) {
 

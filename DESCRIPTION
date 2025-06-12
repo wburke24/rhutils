@@ -18,4 +18,9 @@ Depends:
 Imports:
   dplyr,
   lubridate,
-  zoo
+  zoo,
+  leaflet,
+  sf,
+  soiltexture,
+  terra
+

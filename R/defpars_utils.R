@@ -15,24 +15,62 @@ read_def = function(def_file) {
 }
 
 # ================================================================================
+# THIS DOES EVERYTHING NOW - READS TABLE, FINDS TABLE IN OUTPUT FOLDER, CONVERTS TO LIST
 #' @export
-read_pars_table = function(out_dir) {
-  parstable = list.files(paste0(out_dir,"/params/"),pattern = "all_def_changes",full.names = T )
-  if (length(parstable) == 0) {
-    stop("Couldn't find any pars tables")
-  } else if (length(parstable) > 1) {
-    stop("More than 1 pars table found")
+read_pars_table = function(out_dir = NULL, csv = NULL, listformat = F, table_name = "all_def_changes") {
+  if (is.null(out_dir) & is.null(csv)) {
+    stop("Must input either out_dir or csv, indicating output directory or specific parameter csv file.\n")
   }
-  inputpars = read.csv(parstable)
-  if (names(inputpars)[1] == "X") {
-    inputpars = inputpars[,-1]
+  if (!is.null(out_dir)) {
+    parstable = list.files(paste0(out_dir,"/params/"),pattern = table_name,full.names = T )
+    if (length(parstable) == 0) {
+      stop("Couldn't find any pars tables.\n")
+    } else if (length(parstable) > 1) {
+      stop("More than 1 pars table found, specify csv.\n")
+    }
+  } else if (!is.null(csv)) {
+    parstable = csv
   }
-  return(inputpars)
+  cat("Reading parameter csv: ",parstable,".\n")
+  pars_df = read.csv(parstable)
+  if (names(pars_df)[1] == "X") {
+    pars_df = pars_df[,-1]
+  }
+  # fix names maybe
+  if (!all(c("Variable","Def_file") %in% names(pars_df))) {
+    cat("Attempting to fix parameter table col names.\n")
+    if (any(names(pars_df) %in% c("variable", "parameter","Parameter"))) {
+      names(pars_df)[names(pars_df) %in% c("variable", "parameter","Parameter")] = "Variable"
+    }
+    if (any(names(pars_df) %in% c("def_file", "file","def"))) {
+      names(pars_df)[names(pars_df) %in% c("def_file", "file","def")] = "Def_file"
+    }
+    if (!all(c("Variable","Def_file") %in% names(pars_df))) {
+      cat("Col names werent 'Variable' and 'Def_file', may be messed up or wrong file.")
+    }
+  }
+
+  if (listformat) {
+    cat("Converting parameter df to list.\n")
+    vcol = which(names(pars_df) == "Variable")
+    dcol = which(names(pars_df) == "Def_file")
+    if (length(vcol) == 0 | length(dcol) == 0) {
+      stop("Missing col names, can't convert to list, use 'Variable' and 'Def_file' col names.\n")
+    }
+    # pars_df_v = pars_df[,vcol]
+    # pars_df_d = pars_df[,dcol]
+    # pars_df_vals = pars_df[,c(-vcol,-dcol)]
+    pars_list = apply(pars_df, 1, FUN = function(X){list(Def_file = unname(X[dcol]), Variable = unname(X[vcol]), Value = unname(X[c(-vcol,-dcol)]))} )
+
+    return(pars_list)
+  }
+  return(pars_df)
 }
 
 # ================================================================================
 #' @export
 defpars_csv2list = function(defpar_csv) {
+  cat("Switch to read_pars_table")
   df = read.csv(defpar_csv)
   vcol = which(names(df) == "Variable")
   dcol = which(names(df) == "Def_file")
@@ -47,11 +85,11 @@ write_param_table = function(input_def_pars, outfile_basename = "all_def_changes
   vars_defs = data.frame(Variable = sapply(input_def_pars, "[[", 2), Def_file = sapply(input_def_pars, "[[", 1))
   param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
   names(param_table)[3:length(param_table[1,])] = paste0("Run_",c(1:(length(param_table[1,])-2)))
-  outname = paste0(outfile_basename,"_" ,gsub( ":", ".", sub( " ", "_", Sys.time())), ".params"  )
+  outname = paste0(outfile_basename,"_" ,format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".params"  )
   write.csv(param_table, file = outname)
   cat("Wrote table of parameter changes to: ", outname)
 }
-IOin_def_pars_simple()
+
 # ================================================================================
 #only works for single def pars
 #' @export

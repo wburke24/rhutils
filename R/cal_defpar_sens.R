@@ -4,6 +4,7 @@
 #' @export
 cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T, def_changes_by_stat = F) {
 
+  cat("==================== Reading Data ====================\n")
   sortops = c("NSE", "NSElog", "PBIAS", "RMSE", "r2")
   if (!sortby %in% sortops) {
     stop(paste0("sortby arg must be one of: ", paste0(sortops, collapse = " ")))
@@ -34,18 +35,25 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
   if (!"streamflow" %in% vars) stop("Must have streamflow in output.")
   if ("base_flow" %in% vars & add_base){
     sim_DT$streamflow = sim_DT$streamflow  + sim_DT$base_flow
-    cat("Adding base_flow to streamflow when calculating eval stats.")
-  } 
+    cat("Adding base_flow to streamflow when calculating eval stats.\n")
+  }
+  cat("\n==================== Calibration Stats ====================\n")
   eval = cal_eval(Qsim = sim_DT, Qobs = obs_source, monthly = monthly)
 
   # cols are stats and params, rows are runs, harder to read this one
-  eval_par_comb = cbind(eval, defpar_df_t)
   if (def_changes_by_stat) {
+    cat("*** Outputting combined dataframe of parameters and evaluation stats. ***\n")
+    eval_par_comb = cbind(eval, defpar_df_t)
     return(eval_par_comb)
   }
-  #alt
-  # statspars = names(eval_par_comb)
-  # t(eval_par_comb)
+
+  # USING SRC - STANDARDIZED REGRESSION COEFFICIENTS
+  # IF N RUNS IS TOO SMALL, WILL GET NAS IN RESPONSE DATA
+  cat("\n==================== Parameter Sensitivity ====================\n")
+  cat("Using 'sensitivity::src()' for sensitivity analysis.\n")
+  if (nrow(defpar_df_t) <= 5 || nrow(defpar_df_t) < ncol(defpar_df_t)) {
+    cat("WARNING: Limited runs, relative to parameter count, may lead to NAs in output. Consider additional runs.\n")
+  }
 
   sens_nse = sensitivity::src(X = defpar_df_t, y = eval$NSE)
   sens_NSElog = sensitivity::src(X = defpar_df_t, y = eval$NSElog)
@@ -53,8 +61,6 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
   sens_RMSE = sensitivity::src(X = defpar_df_t, y = eval$RMSE)
   sens_R2 = sensitivity::src(X = defpar_df_t, y = eval$R2)
 
-  nsedf = sens_nse$SRC
-  names(sens_nse$SRC)
 
   # almost certain this doesn't need to be ordered or anything
   outdf = cbind(

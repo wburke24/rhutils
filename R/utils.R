@@ -143,8 +143,8 @@ GetRunID = function(increment = FALSE, reset = FALSE) {
     runcon = file(runidfile,open = "w+")
     writeLines(text = "0",runcon)
     close(runcon)
-    cat("Current run ID: ",runid,"\n")
-    return(runid)
+    cat("Current run ID: ",0,"\n")
+    return(0)
   }
   runcon = file(runidfile,open = "r+")
   if (reset) {
@@ -176,7 +176,7 @@ AddRunIDtoOutputFilters = function(output_filter, runid) {
   return(output_filter)
 }
 
-
+#' @export
 find_runID = function(out_dir) {
   allcsv = list.files(out_dir, ".csv")
   if (all(grepl("RunID\\d+",allcsv))) {
@@ -193,6 +193,16 @@ find_runID = function(out_dir) {
   }
 }
 
+#' @export
+ExtractRunID = function(out_dir) {
+  allfiles = list.files(out_dir)
+  allrun = stringr::str_extract(allfiles,"RunID\\d+")
+  run = unique(allrun[!is.na(allrun)])
+  if (length(run) > 1) {
+    stop(paste0("More than 1 run ID found:",run))
+  }
+  return(run)
+}
 
 #
 # remove_common_parts <- function(char_vec) {
