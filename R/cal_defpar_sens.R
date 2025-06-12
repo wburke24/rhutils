@@ -29,6 +29,21 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
     defpar_df_t = defpar_df_t[,par_lens != 1 ]
   }
 
+  # DEF PARS  - MAKE SURE ALL ARE NUMERIC, CAN'T HANDLE CHARACTER INPUTS FOR SOME REASON
+  if (any(apply(defpar_df_t,2, is.character))) {
+    cat("Converting parameter table from character to numeric.\n")
+    dfnew = as.data.frame(apply(defpar_df_t,2, function(x) suppressWarnings(as.numeric(x)), simplify = F))
+    nacol = apply(dfnew, 2, function(x) any(is.na(x)) )
+    if (any(nacol)) {
+      cat("Some or all of parameter table contained character values not convertable to numeric, eg allocation_flag.\n
+      Omitting for sensitivity analysis.\n")
+      # for here, replace with original data, later remove
+      dfnew[,which(nacol)] = defpar_df_t[,which(nacol)] 
+    }
+    defpar_df_t = dfnew
+  }
+
+
   # ============================== GET CAL EVALUATION STATS ==============================
   sim_DT = get_basin_daily(out_dir)
   vars = names(sim_DT)[!names(sim_DT) %in% c("day", "month", "year", "basinID", "run", "date", "wy", "yd")]
@@ -53,6 +68,47 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
   cat("Using 'sensitivity::src()' for sensitivity analysis.\n")
   if (nrow(defpar_df_t) <= 5 || nrow(defpar_df_t) < ncol(defpar_df_t)) {
     cat("WARNING: Limited runs, relative to parameter count, may lead to NAs in output. Consider additional runs.\n")
+  }
+
+  if (any(nacol)) {
+  # for here, replace with original data, later remove
+  defpar_df_t = defpar_df_t[,-which(nacol)] 
+  }
+ 
+  testing = F
+  if (testing) {
+    X = defpar_df_t
+    colnames(X) = paste0("par",1:ncol(X))
+    str(X)
+    
+    X = as.data.frame(apply(X,2, function(v) suppressWarnings(as.numeric(v)), simplify = F))
+    str(X)
+    signif(X)
+
+    y = eval$NSE
+    
+    rank = FALSE
+    logistic = FALSE
+    nboot = 0
+    conf = 0.95
+
+    data <- data.frame(Y = y, X)
+
+    names(data)
+    names(defpar_df_t)
+
+    if (nboot == 0) {
+        src <- data.frame(original = sensitivity:::estim.src(data, logistic))
+        rownames(src) <- colnames(X)
+    }
+    out <- list(X = X, y = y, rank = rank, nboot = nboot, conf = conf, 
+        call = match.call())
+    class(out) <- "src"
+    if (!rank) {
+        out$SRC <- src
+    }
+
+
   }
 
   sens_nse = sensitivity::src(X = defpar_df_t, y = eval$NSE)
