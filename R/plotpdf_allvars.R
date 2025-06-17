@@ -84,7 +84,7 @@ plotpdf_allvars = function(out_dir,
 
   # ======================================== VAR LISTS - FOR CONVERSIONS AND LABELS ========================================
   # hydro vars to convert to mm
-  output_vars_hydro = c("evaporation","evaporation_surf", "exfiltration_sat_zone", "exfiltration_unsat_zone", "transpiration_unsat_zone","transpiration_sat_zone", "streamflow", "water_equivalent_depth", "gw.Qout", "rootzone.depth", "sat_deficit", "gw_drainage", "lai","rz_storage", "rz_transfer", "unsat_storage", "unsat_transfer", "detention_store", "total_water_in", "litter.rain_stored", "gw.storage","base_flow", "canopy_rain_stored", "canopy_snow_stored", "evapotranspiration", "ET")
+  output_vars_hydro = c("evaporation","evaporation_surf", "exfiltration_sat_zone", "exfiltration_unsat_zone", "transpiration_unsat_zone","transpiration_sat_zone", "streamflow", "water_equivalent_depth", "gw.Qout", "rootzone.depth", "sat_deficit", "gw_drainage", "rz_storage", "rz_transfer", "unsat_storage", "unsat_transfer", "detention_store", "total_water_in", "litter.rain_stored", "gw.storage","base_flow", "canopy_rain_stored", "canopy_snow_stored", "evapotranspiration", "ET")
   
   # carbon vars, no conversion, label to kgC/m2
   output_vars_carbon = c(
