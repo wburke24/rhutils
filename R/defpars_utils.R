@@ -94,11 +94,12 @@ write_param_table = function(input_def_pars, outfile_basename = "all_def_changes
 #only works for single def pars
 #' @export
 write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NULL) {
-  def_pars_df = data.frame(matrix(unlist(input_def_pars), nrow = length(input_def_pars), byrow = T))
-  for (f in unique(def_pars_df$X1)) {
+  # def_pars_df = data.frame(matrix(unlist(input_def_pars), nrow = length(input_def_pars), byrow = T))
+  def_pars_df = defpars_list2df(input_def_pars)
+  for (f in unique(def_pars_df$Def_file)) {
     # subset def file pars and put in format expected by the change_def_file function
-    def_par_subset = data.frame(t(def_pars_df[def_pars_df$X1 == f,3]))
-    names(def_par_subset) = def_pars_df[def_pars_df$X1 == f,2]
+    def_par_subset = data.frame(matrix(def_pars_df[def_pars_df$Def_file == f, 3], nrow =1))
+    names(def_par_subset) = def_pars_df[def_pars_df$Def_file == f,"Variable"]
     new_file = change_def_file(def_file = f, par_sets = def_par_subset, file_name_ext = filename_ext)
   }
 }
@@ -349,7 +350,7 @@ def_par_allcomb = function(defpars) {
 #  Sensetivity ================================================================================
 # parameter sensetivity, for each output var
 #' @export
-pars_sens = function(out_dir, input_def_pars, sortby = "Mean") {
+pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data = T) {
 
   sortops = c("Mean", "Max", "Min", "Avg Annual Max", "Avg Annual Min")
   if (!sortby %in% sortops) {
@@ -360,23 +361,54 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean") {
   # ============================== GET DEF PARS IN USABLE FORMAT ==============================
   defpar_df = defpars_list2df(input_def_pars)
   defpar_df_t = as.data.frame(t(defpar_df[,c(3:ncol(defpar_df))]))
-  names(defpar_df_t) = paste0(defpar_df$Parameter,"--", defpar_df$File)
+  names(defpar_df_t) = paste0(defpar_df$Variable,"--", defpar_df$Def_file)
 
   # ============================== GET RESPONSE VARS/METRICS ==============================
   sim_DT = get_basin_daily(out_dir)
   vars = names(sim_DT)[!names(sim_DT) %in% c("day", "month", "year", "basinID", "run", "date", "wy", "yd")]
   # Ensure sim_DT is a data.table
   setDT(sim_DT)
+  # CHECK INPUTS
+  if (nrow(defpar_df_t) != length(unique(sim_DT$run))) {
+    defrunids = stringr::str_extract(row.names(defpar_df_t),"\\d+")
+    simrunids = stringr::str_extract(unique(sim_DT$run),"\\d+$")
+    cat("Defpar runs not found in output data:", defrunids[!defrunids %in% simrunids], "\n")
+    cat("Output runs not found in defpar data:",simrunids[!simrunids %in% defrunids],"\n")
+    if (omit_mising_data) {
+      if (length(defrunids[!defrunids %in% simrunids]) > 0) {
+        # remove from def pars
+        pars_remove = defrunids[!defrunids %in% simrunids]
+        # rowsremove = stringr::str_detect(row.names(defpar_df_t), pars_remove)
+        # rowsremove = which(defrunids %in% pars_remove)
+        defpar_df_t = defpar_df_t[!defrunids %in% pars_remove,]
+      }
+      if (length(simrunids[!simrunids %in% defrunids]) > 0) {
+        # remove from sim runs
+        # simrunidsall = stringr::str_extract(sim_DT$run,"\\d+$")
+        # removesim = simrunids[!simrunidsall %in% defrunids]
+        # removesim = stringr::str_detect(sim_DT$run,paste0(pars_remove,"$"))
+        # rowsremovesim = which(simrunids %in% removesim)
+        # sum(stringr::str_detect(sim_DT$run,paste0("100","$")))
+        cat("Removing the data without matching parameter data, this may not work \n")
+        sim_DT = sim_DT[simrunidsall %in% defrunids,]
+
+      }
+    } else {
+      stop("See above\n")
+    }
+  }
+  
+
   # separate dfs is just easier somehow
   mean = sim_DT[, lapply(.SD, function(x) mean = mean(x, na.rm = TRUE)), by = run, .SDcols = vars]
   min = sim_DT[, lapply(.SD, function(x) min = min(x, na.rm = TRUE)), by = run, .SDcols = vars]
   max = sim_DT[, lapply(.SD, function(x) max = max(x, na.rm = TRUE)), by = run, .SDcols = vars]
   # ASSUME RUN ENDS WITH RUN NUMBER
-  mean$run_num = as.numeric(str_extract(mean$run,"(?<=_)\\d+$"))
+  mean$run_num = as.numeric(stringr::str_extract(mean$run,"(?<=_)\\d+$"))
   mean = mean[order(mean$run_num),]
-  min$run_num = as.numeric(str_extract(min$run,"(?<=_)\\d+$"))
+  min$run_num = as.numeric(stringr::str_extract(min$run,"(?<=_)\\d+$"))
   min = min[order(min$run_num),]
-  max$run_num = as.numeric(str_extract(max$run,"(?<=_)\\d+$"))
+  max$run_num = as.numeric(stringr::str_extract(max$run,"(?<=_)\\d+$"))
   max = max[order(max$run_num),]
   # Compute annual max and min per run and year
   an_max = sim_DT[, lapply(.SD, function(x) annual_max = max(x, na.rm = TRUE)), by = .(run, year), .SDcols = vars]
@@ -384,20 +416,20 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean") {
   an_min = sim_DT[, lapply(.SD, function(x) annual_min = min(x, na.rm = TRUE)), by = .(run, year), .SDcols = vars]
   avg_an_min = an_min[, lapply(.SD, function(x) avg_annual_min = mean(x, na.rm = TRUE)), by = .(run), .SDcols = vars]
 
-  avg_an_max$run_num = as.numeric(str_extract(avg_an_max$run,"(?<=_)\\d+$"))
+  avg_an_max$run_num = as.numeric(stringr::str_extract(avg_an_max$run,"(?<=_)\\d+$"))
   avg_an_max = avg_an_max[order(avg_an_max$run_num),]
-  avg_an_min$run_num = as.numeric(str_extract(avg_an_min$run,"(?<=_)\\d+$"))
+  avg_an_min$run_num = as.numeric(stringr::str_extract(avg_an_min$run,"(?<=_)\\d+$"))
   avg_an_min = avg_an_min[order(avg_an_min$run_num),]
 
-  src_mean = lapply(vars, function(i) {src(X = defpar_df_t, y = mean[[i]])})
+  src_mean = lapply(vars, function(i) {sensitivity::src(X = defpar_df_t, y = mean[[i]])})
   names(src_mean) = vars
-  src_min = lapply(vars, function(i) {src(X = defpar_df_t, y = min[[i]])})
+  src_min = lapply(vars, function(i) {sensitivity::src(X = defpar_df_t, y = min[[i]])})
   names(src_min) = vars
-  src_max = lapply(vars, function(i) {src(X = defpar_df_t, y = max[[i]])})
+  src_max = lapply(vars, function(i) {sensitivity::src(X = defpar_df_t, y = max[[i]])})
   names(src_max) = vars
-  src_avg_an_max = lapply(vars, function(i) {src(X = defpar_df_t, y = avg_an_max[[i]])})
+  src_avg_an_max = lapply(vars, function(i) {sensitivity::src(X = defpar_df_t, y = avg_an_max[[i]])})
   names(src_avg_an_max) = vars
-  src_avg_an_min = lapply(vars, function(i) {src(X = defpar_df_t, y = avg_an_min[[i]])})
+  src_avg_an_min = lapply(vars, function(i) {sensitivity::src(X = defpar_df_t, y = avg_an_min[[i]])})
   names(src_avg_an_min) = vars
 
   out = mapply(
@@ -439,4 +471,34 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean") {
   )
   return(out)
 
+}
+
+# output the pars sens
+#' @export
+pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_tables.pdf", pdfwidth = 14, pdfheight = 14) {
+  library(grid)
+  library(gridExtra)
+
+  pdf(output_path, width = pdfwidth, height = pdfheight)
+
+  for (i in seq_along(sensout)) {
+    df <- sensout[[i]]
+
+    tbl <- tableGrob(df, rows = NULL)  # no row names
+
+    # Bold column headers
+    header_gpar <- gpar(fontface = "bold", fill = "#D3D3D3")
+    tbl$grobs[tbl$layout$name == "colhead"] <- lapply(
+      tbl$grobs[tbl$layout$name == "colhead"],
+      function(g) editGrob(g, gp = header_gpar)
+    )
+
+    title <- textGrob(names(sensout)[i], gp = gpar(fontsize = 14, fontface = "bold"))
+
+    # grid.newpage()
+    grid.arrange(title, tbl, ncol = 1, heights = c(0.05, 1))
+  }
+
+  dev.off()
+  cat("Wrote output tables to pdf:",output_path,"\n")
 }

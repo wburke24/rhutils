@@ -134,7 +134,7 @@ plotpdf_allvars = function(out_dir,
 
       # ==================== GET MIN, MEAN, MAX RUNS ====================
       mean_byrun <- DT[, .(mean = mean(get(vars[i]), na.rm = TRUE)), by = run]
-      meanrun = mean_byrun[which.min( abs(mean_byrun$mean - mean(mean_byrun$mean))) ,"run"]
+      meanrun = mean_byrun[which.min( abs(mean_byrun$mean - mean(mean_byrun$mean, na.rm = T))) ,"run"]
       maxrun = mean_byrun[which.max(mean_byrun$mean) ,"run"]
       minrun = mean_byrun[which.min(mean_byrun$mean) ,"run"]
 
@@ -169,16 +169,20 @@ plotpdf_allvars = function(out_dir,
       min_label  <- DT[run == minrun, .SD[.N], .SDcols = c(time_var, value_col)]
       setnames(min_label, c(time_var, value_col), c("x", "y"))
       # nudege labels to look nice
-      len = max(DT[[time_var]]) - min(DT[[time_var]])
+      len = max(DT[[time_var]], na.rm = T) - min(DT[[time_var]], na.rm = T)
       nudge = (len/40)
-      lenv = max(DT[[value_col]]) - min(DT[[value_col]])
+      lenv = max(DT[[value_col]], na.rm = T) - min(DT[[value_col]], na.rm = T)
       nudgev = lenv/40
+
+      textmean = paste0("Run ",stringr::str_extract(meanrun,"(?<=_)\\d+$") )
+      textmax = paste0("Run ",stringr::str_extract(maxrun,"(?<=_)\\d+$") )
+      textmin = paste0("Run ",stringr::str_extract(minrun,"(?<=_)\\d+$") )
 
       # add labels to plot
       tmpplot = tmpplot +
-        geom_text(data = as.data.frame(mean_label), aes(x = x, y = y, label = paste0("Run ",str_extract(meanrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = meancol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev*2) +
-        geom_text(data =  as.data.frame(max_label), aes(x = x, y = y, label = paste0("Run ",str_extract(maxrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "bottom", color = maxcol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev) +
-        geom_text(data =  as.data.frame(min_label), aes(x = x, y = y, label = paste0("Run ",str_extract(minrun,"(?<=_)\\d+$") )), hjust = 0, vjust = "top", color = mincol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = -nudgev)
+        geom_text(data = as.data.frame(mean_label), aes(x = x, y = y, label = textmean), hjust = 0, vjust = "bottom", color = meancol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev*2) +
+        geom_text(data =  as.data.frame(max_label), aes(x = x, y = y, label = textmax), hjust = 0, vjust = "bottom", color = maxcol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = nudgev) +
+        geom_text(data =  as.data.frame(min_label), aes(x = x, y = y, label = textmin), hjust = 0, vjust = "top", color = mincol, inherit.aes = FALSE, nudge_x = -nudge, nudge_y = -nudgev)
       
       # tmpplot
 
