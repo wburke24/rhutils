@@ -82,3 +82,7 @@ plot(rap_bio_herbavg, main = "2010-19 Mean Biomass kg/m2")
 plot(basin_v, add=T)
 dev.off()
 
+library(rhutils)
+library(RHESSysPreprocessing)
+
+input_map_plotpdf(map_dir = "preprocessing/whitebox", template = "preprocessing/template/RedRockMSR1strata_coverfrac.template",)

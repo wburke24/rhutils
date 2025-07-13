@@ -1,9 +1,6 @@
 library(RHESSysIOinR)
 library(rhutils)
-source("R/0_global_vars.R")
-# WARD CREEK MSR RHESSYS CALIBRATION INPUTS
-
-# scenario_df[1,]
+# CALIBRATION INPUTS
 
 # -------------------- Project/Run Name --------------------
 # name = "Ward_msr_cal_vegsens"
@@ -20,9 +17,9 @@ dates = c("1989 1 1 1", "2020 9 30 24")
 input_rhessys = IOin_rhessys_input(
   version = "../bin/rhessys7.4",
   tec_file = "tecfiles/ward.tec",
-  world_file = scenario_df[1,]$worldfiles,
+  world_file = "worldfiles/Ward_msr90m.world",
   world_hdr_prefix = paste0("hdr_",name),
-  flowtable = scenario_df[1,]$flowtables,
+  flowtable = "flowtables/Ward_msr90m.flow",
   start = dates[1],
   end = dates[2],
   output_folder = "output/",

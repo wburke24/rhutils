@@ -1,8 +1,7 @@
 
 library(RHESSysIOinR)
 library(rhutils)
-source("R/0_global_vars.R")
-source("../R/output_aliases.R")
+source("R/output_aliases.R")
 options(scipen = 999)
 
 resetveg = F
@@ -45,65 +44,51 @@ if (resetsnow) {
   world$values[world$vars %in% snow_vars] = "0.0"
   write_world(world, gsub(".world", "_snowreset.world", world_path))
   snowworld = gsub(".world", "_snowreset.world", world_path)
+  # tmp = read_world("worldfiles/Ward_msr90m_baseline_init.world")
+  # snow = as.numeric(tmp[tmp$vars == "snowpack.water_equivalent_depth","values"])
+
 }
-
-# tmp = read_world("worldfiles/Ward_msr90m_baseline_init.world")
-# snow = as.numeric(tmp[tmp$vars == "snowpack.water_equivalent_depth","values"])
-
 
 # MSR RHESSYS VEG GROW
 # -------------------- Project/Run Name --------------------
-script = "test_single_run"
-name = paste0(site,"_",script)
+name = "ward_singlerun"
 
 # -------------------- Input RHESSys --------------------
 #clim = "clim/netcdf"
 clim = "clim/ward_netcdfgridmet_agg"
  
 # dates = read_clim(clim,dates_out = T)
-# clim_repeat(clim, "clim/ward_1000y", 1000, "years")
 
 #dates = c("1979 1 1 1", "1999 9 30 24")
 # dates = c("1979 1 1 1", "2019 9 30 24")
-dates = c("1979 1 1 1", "1999 9 30 24")
+dates = c("1979 1 1 1", "1981 9 30 24")
 
 input_rhessys = IOin_rhessys_input(
-  version = "../bin/rhessys7.4",
-  tec_file = paste0("tecfiles/",site,".tec"),
-  # world_file = scenario_df$worldfiles[scenario_df$runs == "baseline"][1],
-  world_file = snowworld,
+  version = "../../bin/rhessys7.5",
+  tec_file = paste0("tecfiles/ward.tec"),
+  world_file = "worldfiles/Ward_msr90m.world",
+  world_hdr_path = "hdr_files",
   world_hdr_prefix = paste0("hdr_",name),
-  flowtable = scenario_df$flowtables[scenario_df$runs == "baseline"][1],
+  flowtable = "flowtables/Ward_msr90m.flow",
   start = dates[1],
   end = dates[2],
   output_folder = "output/",
   output_prefix = name,
-  commandline_options = "-g -vmort_off -climrepeat -msr"
+  commandline_options = "-g -vmort_off"
   # -vegspinup ./defs/spinup_LAI_targets.txt 
 )
 
 # -------------------- Input Headers --------------------
-# input_hdr = IOin_hdr(
-#   basin = "defs/basin.def",
-#   hillslope = "defs/hill.def",
-#   zone = "defs/zone.def",
-#   soil = c("defs/soil_sandy-loam.def", "defs/soil_loam.def"),
-#   landuse = "defs/lu.def",
-#   stratum = c("defs/stratum_evergreen.def", "defs/stratum_shrub.def", "defs/stratum_grass.def", "defs/stratum_nonveg.def"),
-#   basestations = paste0(clim, ".base")
-# )
-
 input_hdr = IOin_hdr(
-  basin = "defs/basin.def", hillslope = "defs/hill.def", zone = paste0("defs/zone_",site,".def"),
-  soil = c(paste0("defs/soil_sandy-loam_",site,".def"), paste0("defs/soil_loam_",site,".def")),
-  landuse = paste0("defs/lu_",site,".def"),
-  stratum = c("defs/stratum_evergreen.def", 
-              paste0("defs/stratum_shrub.def"), 
+  basin = "defs/basin.def", 
+  hillslope = "defs/hill.def", 
+  zone = "defs/zone_Ward.def",
+  soil = c("defs/soil_sandy-loam_Ward.def", "defs/soil_loam_Ward.def"),
+  landuse = "defs/lu_Ward.def",
+  stratum = c("defs/stratum_evergreen.def", "defs/stratum_shrub.def", 
               "defs/stratum_grass.def", "defs/stratum_nonveg.def"),
-  # spinup = "defs/spinup.def",
   basestations = paste0(clim, ".base")
 )
-# names(input_hdr)[names(input_hdr) == "spinup"] = "spinup_def"
 
 # --------------------  Def File Parameters --------------------
 pars_list = list(
@@ -144,7 +129,7 @@ outfilter = build_output_filter(
   output_filename = paste0(name,"_basin"),
   spatial_level = "basin",
   spatial_ID = 1,
-  variables = output_carb
+  variables = output_vars_minimal
 )
 output_filter = IOin_output_filters(outfilter, file_name = "./output/filters/filter.yml")
 
@@ -155,43 +140,19 @@ run_rhessys_single(
   def_pars = input_def_pars,
   tec_data = input_tec_data,
   output_filter = output_filter,
-  return_cmd = F,
-  write_run_metadata = T
+  return_cmd = F
 )
 out_dir = collect_output()
 
-
 plotpdf_allvars(out_dir, name)
 
-df = get_basin_daily(out_dir)
-df = watbal_basin_of(df)
-summary(df$watbal)
-plot(df$date,df$watbal,type="l")
-
-# statefile = worldstate(input_rhessys$world_file)
-# name = world_name(input_rhessys, "_soilspin")
-# file.rename(statefile, name)
-
-
-# -------------------- Reset --------------------
-# 
-# world_path = name
-# world = read_world(worldfile = world_path)
-# 
-# veg_vars =
-#   c(
-#     "cs.cpool", "cs.leafc", "cs.dead_leafc", "cs.leafc_store", "cs.leafc_transfer", "cs.live_stemc", "cs.livestemc_store", "cs.livestemc_transfer", "cs.dead_stemc",
-#     "cs.deadstemc_store", "cs.deadstemc_transfer", "cs.live_crootc", "cs.livecrootc_store", "cs.livecrootc_transfer", "cs.dead_crootc", "cs.deadcrootc_store", 
-#     "cs.deadcrootc_transfer", "cs.frootc", "cs.frootc_store", "cs.frootc_transfer", "cs.cwdc","epv.prev_leafcalloc", "ns.npool", "ns.leafn", "ns.dead_leafn", "ns.leafn_store", 
-#     "ns.leafn_transfer", "ns.live_stemn", "ns.livestemn_store", "ns.livestemn_transfer", "ns.dead_stemn", "ns.deadstemn_store", "ns.deadstemn_transfer", 
-#     "ns.live_crootn", "ns.livecrootn_store", "ns.livecrootn_transfer", "ns.dead_crootn", "ns.deadcrootn_store", "ns.deadcrootn_transfer", "ns.frootn", 
-#     "ns.frootn_store", "ns.frootn_transfer", "ns.cwdn", "ns.retransn"
-#   )
-# 
-# world$values[world$vars %in% veg_vars] = "0.0"
-# 
-# write_world(world, gsub(".world", "_reset.world", world_path))
-
+waterbalance = F
+if (waterbalance) {
+  df = get_basin_daily(out_dir)
+  df = watbal_basin_of(df)
+  summary(df$watbal)
+  plot(df$date,df$watbal,type="l")
+}
 
 
 

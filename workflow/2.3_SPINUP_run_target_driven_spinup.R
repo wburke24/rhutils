@@ -1,9 +1,8 @@
 
 library(RHESSysIOinR)
 library(rhutils)
-source("r/0_global_vars.R")
 
-# WARD CREEK MSR RHESSYS SOIL SPINUP + VEG GROW
+# TARGET DRIVEN SPIN
 
 resetveg = F
 if (resetveg) {
@@ -62,7 +61,7 @@ input_rhessys = IOin_rhessys_input(
   output_folder = "output/",
   output_prefix = name,
   # commandline_options = "-vegspinup ./defs/spinup_LAI_targets.txt -g -vmort_off -climrepeat -msr"
-  commandline_options = "-vegspinup ./defs/spinup_LAI_targets.txt -g -vmort_off -climrepeat -msr"
+  commandline_options = "-vegspinup ./defs/spinup_LAI_targets.txt -g -vmort_off -climrepeat"
 )
 
 # -------------------- Input Headers --------------------
@@ -150,7 +149,6 @@ run_rhessys_single(
   tec_data = input_tec_data,
   output_filter = output_filter,
   return_cmd = F,
-  write_run_metadata = T
 )
 out_dir = collect_output()
 
@@ -163,25 +161,25 @@ file.rename(statefile, paste0("worldfiles/", "Ward_msr90_spingrow.world"))
 
 
 # -------------------- Reset --------------------
+reset = F
+if (reset) {
+  world_path = name
+  world = read_world(worldfile = world_path)
 
-world_path = name
-world = read_world(worldfile = world_path)
+  veg_vars =
+    c(
+      "cs.cpool", "cs.leafc", "cs.dead_leafc", "cs.leafc_store", "cs.leafc_transfer", "cs.live_stemc", "cs.livestemc_store", "cs.livestemc_transfer", "cs.dead_stemc",
+      "cs.deadstemc_store", "cs.deadstemc_transfer", "cs.live_crootc", "cs.livecrootc_store", "cs.livecrootc_transfer", "cs.dead_crootc", "cs.deadcrootc_store", 
+      "cs.deadcrootc_transfer", "cs.frootc", "cs.frootc_store", "cs.frootc_transfer", "cs.cwdc","epv.prev_leafcalloc", "ns.npool", "ns.leafn", "ns.dead_leafn", "ns.leafn_store", 
+      "ns.leafn_transfer", "ns.live_stemn", "ns.livestemn_store", "ns.livestemn_transfer", "ns.dead_stemn", "ns.deadstemn_store", "ns.deadstemn_transfer", 
+      "ns.live_crootn", "ns.livecrootn_store", "ns.livecrootn_transfer", "ns.dead_crootn", "ns.deadcrootn_store", "ns.deadcrootn_transfer", "ns.frootn", 
+      "ns.frootn_store", "ns.frootn_transfer", "ns.cwdn", "ns.retransn"
+    )
 
-veg_vars =
-  c(
-    "cs.cpool", "cs.leafc", "cs.dead_leafc", "cs.leafc_store", "cs.leafc_transfer", "cs.live_stemc", "cs.livestemc_store", "cs.livestemc_transfer", "cs.dead_stemc",
-    "cs.deadstemc_store", "cs.deadstemc_transfer", "cs.live_crootc", "cs.livecrootc_store", "cs.livecrootc_transfer", "cs.dead_crootc", "cs.deadcrootc_store", 
-    "cs.deadcrootc_transfer", "cs.frootc", "cs.frootc_store", "cs.frootc_transfer", "cs.cwdc","epv.prev_leafcalloc", "ns.npool", "ns.leafn", "ns.dead_leafn", "ns.leafn_store", 
-    "ns.leafn_transfer", "ns.live_stemn", "ns.livestemn_store", "ns.livestemn_transfer", "ns.dead_stemn", "ns.deadstemn_store", "ns.deadstemn_transfer", 
-    "ns.live_crootn", "ns.livecrootn_store", "ns.livecrootn_transfer", "ns.dead_crootn", "ns.deadcrootn_store", "ns.deadcrootn_transfer", "ns.frootn", 
-    "ns.frootn_store", "ns.frootn_transfer", "ns.cwdn", "ns.retransn"
-  )
+  world$values[world$vars %in% veg_vars] = "0.0"
 
-world$values[world$vars %in% veg_vars] = "0.0"
-
-write_world(world, gsub(".world", "_reset.world", world_path))
-
-
+  write_world(world, gsub(".world", "_reset.world", world_path))
+}
 
 vispatches = F
 if (vispatches){

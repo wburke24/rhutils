@@ -397,8 +397,27 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
       stop("See above\n")
     }
   }
-  
 
+  # this dup removal shouldnt be needed if input data is clean, but if not will trigger here
+  # shouldn't need to modify the output df
+  if (sum(duplicated(names(defpar_df_t))) > 0) {
+    defpar_df_t[,duplicated(names(defpar_df_t))] = NULL
+    cat("Duplicate def file + variable entries have been removed.\n")
+  }
+
+  # check for and remove character col
+  chr_col = apply(defpar_df_t, 2, FUN = function(X) {any(is.na(suppressWarnings(as.numeric(X)))) })
+  if (any(chr_col)) {
+    cat("Removing characater def par(s):",names(chr_col[chr_col]),".\n")
+    cat("Normal src() function can't handle character input vars, need to use logistic version I think.\n")
+    defpar_df_t = defpar_df_t[,!chr_col]
+  }
+  
+  # remove non-varying defpar params
+  defpar_df_t = defpar_df_t[,apply(defpar_df_t,2,FUN = function(X){length(unique(X))>1})]
+  # set to numeric again if there was char
+  defpar_df_t = apply(defpar_df_t,2,as.numeric)
+  
   # separate dfs is just easier somehow
   mean = sim_DT[, lapply(.SD, function(x) mean = mean(x, na.rm = TRUE)), by = run, .SDcols = vars]
   min = sim_DT[, lapply(.SD, function(x) min = min(x, na.rm = TRUE)), by = run, .SDcols = vars]
@@ -420,6 +439,55 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
   avg_an_max = avg_an_max[order(avg_an_max$run_num),]
   avg_an_min$run_num = as.numeric(stringr::str_extract(avg_an_min$run,"(?<=_)\\d+$"))
   avg_an_min = avg_an_min[order(avg_an_min$run_num),]
+  
+  testing = F
+  if (testing) {
+    srcout = sensitivity::src(X = defpar_df_t, y = mean[[vars[1]]],nboot=100)
+    # rownames(defpar_df_t)
+    colnames(defpar_df_t) = paste0("X",seq_along(colnames(defpar_df_t)))
+    rownames(defpar_df_t) = NULL
+    defpar_df_t = apply(defpar_df_t,2,as.numeric)
+
+
+    X = defpar_df_t
+    y = mean[[vars[1]]]
+    srcout = sensitivity::src(X = X, y = y)
+    # rownames(defpar_df_t)
+
+    # sensitivity::src
+    data <- data.frame(Y = y, X)
+    
+    i = 1:nrow(data)
+    d <- data[i, ]
+    lm.Y <- lm(formula(paste(colnames(d)[1], "~", paste(colnames(d)[-1], collapse = "+"))), data = d)
+    src = coefficients(lm.Y)[-1] * sapply(d[-1], sd)/sapply(d[1], sd)
+
+    src <- data.frame(original = sensitivity:::estim.src(data, F))
+
+    length(colnames(X))
+    length(rownames(src))/4
+
+    rownames(src) <- colnames(X)
+    out <- list(X = X, y = y, rank = FALSE, nboot = 0, conf = 0.95, call = match.call())
+    class(out) <- "src"
+    out$SRC <- src
+
+    # ex
+    library(boot)
+    n <- 100
+    X <- data.frame(X1 = runif(n, 0.5, 1.5),
+                    X2 = runif(n, 1.5, 4.5),
+                    X3 = runif(n, 4.5, 13.5))
+
+    # linear model : Y = X1 + X2 + X3
+
+    y <- with(X, X1 + X2 + X3)
+
+    # sensitivity analysis
+
+    x <- sensitivity::src(X, y, nboot = 100)
+
+  }
 
   src_mean = lapply(vars, function(i) {sensitivity::src(X = defpar_df_t, y = mean[[i]])})
   names(src_mean) = vars

@@ -16,7 +16,8 @@ lpc_data_path = "~/Projects/CARB/data/Landcover/2019/"
 # to get the grid
 mask_map_path = "preprocessing/whitebox/basin.tif"
 
-# find the LPC data
+# find the LPC data - 
+# grid source: https://www.usgs.gov/media/files/landsat-collection-2-us-ard-tile-grid-shapefile-conus
 lpc_grid = vect("~/Projects/CARB/data/Landcover/CONUS_C2_ARD_grid/conus_c2_ard_grid.shp")
 mask_rast = rast(mask_map_path)
 mask_rast_prj = project(mask_rast,crs(lpc_grid))

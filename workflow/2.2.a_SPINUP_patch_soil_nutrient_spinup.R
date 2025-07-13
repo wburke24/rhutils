@@ -1,9 +1,7 @@
 # soil_spin
 library(RHESSysIOinR)
 library(rhutils)
-library(data.table)
 source("R/output_aliases.R")
-# source("../R/fun_spinup.R")
 
 # Uses a worldfile to generate single patch worlds based on each veg parameter, then runs each world and reincorporates the
 # resulting soil nutrient values into the original worldfile
@@ -63,7 +61,7 @@ mapply(writeLines, newflows, output_flow_paths)
 
 # -------------------- RUN FOR SOIL NUTRIENT SPINUP --------------------
 IDs = rules
-IDs = c("1", "2", "3", "4", "5", "7", "6", "8")
+# IDs = c("1", "2", "3", "4", "5", "7", "6", "8")
 
 run_cmds = list()
 
@@ -155,18 +153,6 @@ for (i in seq_along(IDs)) {
 
 out_dir = collect_output()
 plotpdf_allvars(out_dir, "spinsoils")
-
-# -------------------- MANUAL PARALLEL RUNS --------------------
-# library(parallel)
-
-# n_cores = detectCores() - 1
-# # cl = makeCluster(length(run_cmds))
-# cl = makePSOCKcluster(names = length(run_cmds), port = floor(runif(1,11000,11999)), outfile = "output/clusteroutfile")
-# clusterExport(cl = cl, varlist = c("run_cmds"), envir = environment())
-# parLapply(cl = cl, X = seq_along(IDs), fun = function(X, Y) { system(Y[[X]])}, Y = run_cmds)
-# stopCluster(cl)
-
-# out_dir = collect_output()
 
 
 # -------------------- MANUAL PARALLEL RUNS --------------------

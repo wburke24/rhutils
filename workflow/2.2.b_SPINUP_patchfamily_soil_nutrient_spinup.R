@@ -1,8 +1,6 @@
 # soil_spin
 library(RHESSysIOinR)
 library(rhutils)
-library(data.table)
-# source("../R/fun_spinup.R")
 
 # Uses a worldfile to generate single patch worlds based on each veg parameter, then runs each world and reincorporates the
 # resulting soil nutrient values into the original worldfile
@@ -146,8 +144,7 @@ for (i in seq_along(IDs)) {
     def_pars = input_def_pars,
     tec_data = input_tec_data,
     output_filter = output_filter,
-    return_cmd = T,
-    write_run_metadata = F
+    return_cmd = T
   )
   
 }

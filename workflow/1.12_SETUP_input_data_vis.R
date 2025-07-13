@@ -24,3 +24,8 @@ template = "preprocessing/template/walla_std.template"
 
 check_template(template)
 
+r = rast("preprocessing/whitebox/cover_frac.tif")
+plot(r)
+
+r2 = rast("preprocessing/whitebox/cover_frac_LPC.tif")
+plot(r2)

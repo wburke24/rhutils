@@ -5,10 +5,10 @@ library(rhutils)
 # source("R/0_global_vars.R")
 
 # -----------------------------------
-name = "preprocessing/preprocess_out/RedRockMSR30m_tree2shrubnobare"
+name = "preprocessing/preprocess_out/Ward_MSR_1patch"
 map_dir = "preprocessing/whitebox/"
-template = "preprocessing/template/RedRockMSR1strata_coverfrac.template"
-asprules = "preprocessing/rules/LPC_30m_tree2shrubnobare.rules"
+template = "preprocessing/template/"
+asprules = "preprocessing/rules/"
 check_template(template)
 # -----------------------------------
 overwrite = TRUE

@@ -190,56 +190,37 @@ run_rhessys_multi(
 )
 beepr::beep(3)
 out_dir = collect_output()
-plotpdf_allvars(out_dir, out_name = paste0("spinsoils_ID8_SENS_",ExtractRunID(out_dir)), step = "yearly", pdfwidth = 10, hide_legend = T)
 
-ExtractRunID = function(out_dir) {
-  allfiles = list.files(out_dir)
-  allrun = stringr::str_extract(allfiles,"RunID\\d+")
-  run = unique(allrun[!is.na(allrun)])
-  if (length(run) > 1) {
-    stop(paste0("More than 1 run ID found:",run))
+plotpdf_allvars(out_dir, out_name = paste0("spinsoils_ID8_SENS_RunID_",GetRunID()), step = "yearly", pdfwidth = 10, hide_legend = T)
+
+senslist = pars_sens(out_dir = out_dir, input_def_pars = input_def_pars)
+pars_sens_output_tables(pars_sens_out = senslist,output_path = paste0("pars_sens_RunID_",GetRunID()))
+
+# ALT  - vary the def files
+varied_defs = F
+if (varied_defs) {
+  defopts = c("defs/veg_p301_shrub.def","defs/stratum_shrub.def", "defs/veg_sagebrush_riparian_243.def","defs/veg_sagebrush_uplandl_hybrid_9.def","defs/veg_mtnmahogany.def")
+
+  for (i in seq_along(defopts)) {
+    input_hdr$stratum_def = defopts[i]
+    output_filter$filter$output$filename = paste0(gsub("defs/","",defopts[i]),"_pcp150pct_basin" )
+
+    run_rhessys_single(
+      input_rhessys = input_rhessys,
+      hdr_files = input_hdr,
+      def_pars = input_def_pars,
+      tec_data = input_tec_data,
+      output_filter = output_filter,
+      return_cmd = F,
+      write_log = T
+    )
   }
-  return(run)
+
+  beepr::beep(3)
+  out_dir = collect_output()
+  plotpdf_allvars(out_dir, "spinsoils_ID8_SENS", step = "yearly", pdfwidth = 10, hide_legend = F)
+
 }
-
-ExtractRunID(out_dir)
-
-
-
-# run_rhessys_single(
-#   input_rhessys = input_rhessys,
-#   hdr_files = input_hdr,
-#   def_pars = input_def_pars,
-#   tec_data = input_tec_data,
-#   output_filter = output_filter,
-#   return_cmd = F,
-#   write_log = T
-# )
-
-
-
-
-defopts = c("defs/veg_p301_shrub.def","defs/stratum_shrub.def", "defs/veg_sagebrush_riparian_243.def","defs/veg_sagebrush_uplandl_hybrid_9.def","defs/veg_mtnmahogany.def")
-
-for (i in seq_along(defopts)) {
-  input_hdr$stratum_def = defopts[i]
-  output_filter$filter$output$filename = paste0(gsub("defs/","",defopts[i]),"_pcp150pct_basin" )
-
-  run_rhessys_single(
-    input_rhessys = input_rhessys,
-    hdr_files = input_hdr,
-    def_pars = input_def_pars,
-    tec_data = input_tec_data,
-    output_filter = output_filter,
-    return_cmd = F,
-    write_log = T
-  )
-}
-
-beepr::beep(3)
-out_dir = collect_output()
-plotpdf_allvars(out_dir, "spinsoils_ID8_SENS", step = "yearly", pdfwidth = 10, hide_legend = F)
-
 
 # -------------------- MANUAL PARALLEL RUNS --------------------
 manualpara = F

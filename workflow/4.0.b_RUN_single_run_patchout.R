@@ -1,7 +1,6 @@
 
 library(RHESSysIOinR)
 library(rhutils)
-source("R/0_global_vars.R")
 source("../R/output_aliases.R")
 options(scipen = 999)
 
@@ -83,7 +82,7 @@ input_rhessys = IOin_rhessys_input(
   end = dates[2],
   output_folder = "output/",
   output_prefix = name,
-  commandline_options = "-g -vmort_off -climrepeat -msr"
+  commandline_options = "-g -vmort_off -climrepeat"
   # -vegspinup ./defs/spinup_LAI_targets.txt 
 )
 
@@ -195,10 +194,13 @@ out_dir = collect_output()
 
 plotpdf_allvars(out_dir, name)
 
-df = get_basin_daily(out_dir)
-df = watbal_basin_of(df)
-summary(df$watbal)
-plot(df$date,df$watbal,type="l")
+waterbalance = F
+if (waterbalance) {
+  df = get_basin_daily(out_dir)
+  df = watbal_basin_of(df)
+  summary(df$watbal)
+  plot(df$date,df$watbal,type="l")
+}
 
 
 
