@@ -5,46 +5,36 @@
 # install.packages("whitebox")
 # whitebox::install_whitebox()
 
+# for soil: ?
+# appendTextureclass {soilassessment}
+
 library(whitebox)
 library(terra)
 library(rhutils)
+library(leaflet)
+library(leafem)
+library(sf)
 
 wbt_version()
 wbt_init()
 
-textlocTL = function(srcmap) {
-  pct = 0.95
-  exts = ext(srcmap)
-  x = exts[2] - ((exts[2] - exts[1])*pct)
-  y = exts[3] + ((exts[4] - exts[3])*pct)
-  return(c(x,y))
-}
-
-# ==================== Existing maps ====================
-# fieldsite = vect("preprocessing/spatial_source/fromseka/field site.shp")
-# basin_proj = project(basin, crs(fieldsite))
-# plot(basin_proj)
-# plot(fieldsite,add=T)
-
 # ==================== Inputs ====================
 # source DEM
-dem_source_path = "preprocessing/spatial_source/ned_dem_basinclip.tif"
-# res = 90
-res = 30
-
+source_dem = "preprocessing/spatial_source/ned_dem_basinclip.tif"
 # source gauge location shapefile, snap dist in map unit (m)
-# gauge_source = "preprocessing/spatial_source/basin_gauge.shp"
-gauge_source = "preprocessing/whitebox/gauge_subbasin.shp"
+source_gauge = "preprocessing/spatial_source/gauge_loc.shp"
+gauge_snap_dist = 90
 
-gauge_snap_dist = 120
+res = 90
 
-stream_threshold=275
-# stream_threshold=150
-# stream_threshold=75
+# stream_threshold=100
+stream_threshold=150
+# stream_threshold=170
+
 
 # for final and temp output
 output_dir = "preprocessing/whitebox"
-wb_tmp = file.path(output_dir, "wb_tmp")
+tmp_dir = file.path(output_dir, "wb_tmp")
 
 plots = T
 writeplots = T
@@ -53,327 +43,74 @@ testing = F
 # check + add folders
 if (!dir.exists(output_dir)) {
   dir.create(output_dir)
-} 
-if (!dir.exists(wb_tmp)) {
-  dir.create(wb_tmp)
+}
+if (!dir.exists(tmp_dir)) {
+  dir.create(tmp_dir)
 }
 
+# ==================== TRIM, RESAMPLE, Fill, d8 direction, accumulation, Streams, Basin, basin outlet  ====================
+maps_out = wbox_dem2streams_gauge_basin(source_dem, src_gauge, res, stream_threshold = stream_threshold, gauge_snap_dist = gauge_snap_dist, output_dir, plots = T, writeplots = T, overwrite = T)
 
-# ==================== starting DEM ====================
-# copy and trim source DEM -- could clip manually here too
-dem_source = rast(dem_source_path)
-writeRaster(trim(dem_source), file.path(wb_tmp,"dem_trim.tif"), overwrite=T)
+# ==================== Subbasins ====================
+subbasin = wbox_subbasins(dem_brch = maps_out[["DEM"]], streams = maps_out[["streams"]], output_dir = output_dir, stream_threshold = stream_threshold, tmp_dir = tmp_dir, plots = T, writeplots = T, overwrite = T) 
 
-# ==================== CHANGE RESOLUTION HERE ====================
-dem_resample = resample(dem_source, rast(ext(dem_source),resolution = res))
+sub_sizes = wbox_subbasins_vis(subbasin, maps_out[["streams"]])
 
-writeRaster(trim(dem_resample), file.path(wb_tmp,"dem_trim.tif"), overwrite=T)
-
-if (plots) {
-  plot(rast(file.path(wb_tmp,"dem_trim.tif")))
-  # rast(file.path(wb_tmp,"dem_trim.tif"))
-}
-
-# ==================== Fill, d8 direction, accumulation ====================
-## Breach depressions to ensure continuous flow
-wbt_breach_depressions(dem = file.path(wb_tmp,"dem_trim.tif"), output = file.path(wb_tmp, "dem_brch.tif"))
-# wbt_breach_depressions_least_cost(dem = file.path(wb_tmp,"dem_trim.tif"), output = file.path(wb_tmp, "dem_brch.tif"), dist = 50)
-# wbt_fill_depressions(dem = file.path(wb_tmp,"dem_trim.tif"), output = file.path(wb_tmp, "dem_brch.tif"))
-
-## Generate d8 flow pointer (note: other flow directions are available)
-wbt_d8_pointer(dem = file.path(wb_tmp, "dem_brch.tif"), output = file.path(wb_tmp, "dem_brch_ptr_d8.tif"))
-# this is fractional? d8, more equivilent to previous grass method
-# wbt_fd8_pointer(dem = file.path(wb_tmp, "dem_brch.tif"), output = file.path(wb_tmp, "dem_brch_ptr_fd8.tif"))
-## Generate d8 flow accumulation in units of cells (note: other flow directions are available)
-wbt_d8_flow_accumulation(input = file.path(wb_tmp, "dem_brch.tif"), output = file.path(wb_tmp, "dem_brch_accum_d8.tif"), out_type = "cells")
-# wbt_fd8_flow_accumulation(dem = file.path(wb_tmp, "dem_brch.tif"), output = file.path(wb_tmp, "dem_brch_accum_fd8.tif"), out_type = "cells")
-
-# ==================== Streams ====================
-## Generate streams with a stream initiation threshold of based on threshold param above
-######## RERUN FROM HERE IF THRESHOLD IS CHANGED ##################
-wbt_extract_streams(flow_accum = file.path(wb_tmp, "dem_brch_accum_d8.tif"), output = file.path(wb_tmp, "streams.tif"), threshold = stream_threshold)
-
-# ==================== Basin, basin outlet ====================
-wbt_jenson_snap_pour_points(pour_pts = gauge_source, 
-                            streams = file.path(wb_tmp, "streams.tif"), 
-                            output = file.path(output_dir, "gauge_loc_snap.shp"), 
-                            snap_dist = gauge_snap_dist)
-
-wbt_watershed(d8_pntr = file.path(wb_tmp, "dem_brch_ptr_d8.tif"), 
-              pour_pts = file.path(output_dir, "gauge_loc_snap.shp"), 
-              output = file.path(wb_tmp, "basin.tif"))
-
-if (plots) {
-  par(mfrow=c(1,1), mar=c(3,3,3,7))
-  plot(rast(file.path(wb_tmp, "basin.tif")))
-  par(mfrow=c(1,1), mar=c(3,3,3,7), new=TRUE)
-  plot(rast(file.path(wb_tmp, "streams.tif")), add=T, col="black")
-  par(mfrow=c(1,1), mar=c(3,3,3,7), new=TRUE)
-  plot(vect(file.path(output_dir, "gauge_loc_snap.shp")), add=T,col="red")
-  par(mfrow=c(1,1), mar=c(3,3,3,7), new=TRUE)
-  plot(vect(gauge_source), add=T,col="blue")
-
-  if (writeplots) {
-    dev.copy2pdf(file = file.path(output_dir, "basin_unmasked_streamsgauge.pdf"), width = 8, height = 6)
-  }
-}
-
-# ==================== Crop and Trim by basin ====================
-# crop tRIM FIRST
-basin = rast(file.path(wb_tmp, "basin.tif"))
-plot(basin)
-
-dem_brch_mask = mask(rast(file.path(wb_tmp, "dem_brch.tif")),basin)
-dem_brch_mask = trim(dem_brch_mask)
-writeRaster(dem_brch_mask,filename = file.path(output_dir, "dem.tif"), overwrite = T)
-
-streams_mask = mask(rast(file.path(wb_tmp, "streams.tif")),basin)
-streams_mask = crop(streams_mask, trim(basin))
-writeRaster(streams_mask,filename = file.path(output_dir, "streams.tif"), overwrite = T)
-
-ptr_mask = mask(rast(file.path(wb_tmp, "dem_brch_ptr_d8.tif")),basin)
-ptr_mask = trim(ptr_mask)
-writeRaster(ptr_mask,filename = file.path(wb_tmp, "dem_brch_ptr_d8.tif"), overwrite = T)
-
-basin = trim(basin)
-writeRaster(basin,filename = file.path(output_dir, "basin.tif"), overwrite = T)
-
-# ==================== Subbasins/hillslopes ====================
-# HILLSLOPES DOESNT WORK SINCE IT EXCLUDES THE STREAM PIXELS
-wbt_subbasins(d8_pntr = file.path(wb_tmp, "dem_brch_ptr_d8.tif"), streams = file.path(output_dir, "streams.tif"), output = file.path(wb_tmp, "subbasins.tif"))
-
-subbasins = rast(file.path(wb_tmp, "subbasins.tif"))
-plot(subbasins)
-subbasins = subst(subbasins, from = unique(values(subbasins, na.rm=T)),to = seq_along(unique(values(subbasins, na.rm=T))))
-
-nsub = length(summary(as.factor(values(subbasins, na.rm=T))))
-subsum = summary(as.factor(values(subbasins, na.rm=T)))
-cellarea = mean(values(cellSize(subbasins)))
-minsub = round((cellarea * min(subsum) * 0.000001), digits = 3)
-maxsub = round((cellarea * max(subsum) * 0.000001), digits = 3)
-
-colors <- rainbow(length(seq_along(unique(values(subbasins)))))
-par(mfrow = c(1,1))
-plot(subbasins, main = "Subbasins", col=colors)
-plot(streams_mask, col="grey",add=T)
-tl = textlocTL(subbasins)
-textlab = paste0("Based on stream threshold ",stream_threshold, "\n",nsub, " subbasins\n", "Min subbasin ", minsub, " km^2,",min(subsum)," patches\nMax subbasin ",maxsub," km^2, ",max(subsum)," patches")
-text(x = tl[1], y = tl[2], labels =textlab , col = "black", cex = 1, adj = c(0,1))
-
-# field = vect("preprocessing/spatial_source/fromseka/field site.shp")
-# fieldprj = project(field, subbasins)
-# plot(fieldprj, add=T)
-
-if (writeplots) {
-  dev.copy2pdf(file = file.path(output_dir, paste0("Subbasin_Streams_thresh",stream_threshold,".pdf")), width = 8, height = 6)
-}
-
-# check if there are tiny subbasins
-tmp = summary(as.factor(values(subbasins)))
-tmp[tmp<20]
-length(tmp[tmp<20])
-
+# ==================== Aggregate outlier/small subbasins ====================
+# IF THERE ARE SUBBASINS THAT ARE TOO SMALL OR STRANGE SHAPES AND NEED TO BE LUMPED INTO OTHERS
+# USE LEAFLET MAP OF SUBBASINS OVERLAID WITH STREAMS, HOVER FOR SUBBASIN ID
+# THEN RECLASS HILLSLOPES AS NEEDED, AND CHECK CHANGES AFTERWARDS
+# NORMAL PLOT INCLUDES COUNT OF SUBBASINS, MIN AND MAX SIZES/CELL COUNTS
 reclasshill = F
 if (reclasshill) {
-  # reclass badhill into targethill
-  badhill = 25
-  targethill = 29
+  s = rast(subbasin)
+  rcl = as.matrix(data.frame(is = c(31,32, 25), becomes = c(4,4,11)))
+  s_new <- classify(s, rcl)
+  writeRaster(s_new, filename = file.path(tmp_dir, "subbasins_new.tif"),overwrite = T)
+
+  subsizes = wbox_subbasins_vis(file.path(tmp_dir, "subbasins_new.tif"), maps_out[["streams"]])
   
-  subset = subbasins
-  subset[subset != badhill] = NA
-  tarsub = subbasins
-  tarsub[tarsub != targethill] = NA
+  wbox_subbasins_plot(file.path(tmp_dir, "subbasins_new.tif"), streams, output_dir, stream_threshold)
   
-  plot(subbasins, main = "Subbasins", col=colors)
-  plot(streams_mask, col="grey",add=T)
-  plot(subset, col = "black",add=T)
-  plot(tarsub, col="brown",add=T)
 
-  tmp = subbasins
-  tmp[tmp == badhill] = targethill
-
-  tmp2  = summary(as.factor(values(tmp)))
-  tmp2[tmp2<20]
-  
-  plot(tmp)
-  
-  writeRaster(x = tmp, filename = file.path(output_dir, "subbasins.tif"), overwrite = T)
-} else {
-  writeRaster(x = subbasins, filename = file.path(output_dir, "subbasins.tif"), overwrite = T)
-}
-
-if (writeplots) {
-  dev.copy2pdf(file = file.path(output_dir, paste0("Subbasin_Streams_thresh",stream_threshold,".pdf")), width = 8, height = 6)
-}
-
-# ==================== SUBSET TO SUBBASIN CONTAINING FIELD SITE ====================
-# FIND CORRECT SUBBASIN, CREATE POINT FOR NEW GAUGE, RERUN SETUP AT 30 METER SINCE BASIN SHOULD BE SMALL, AND THEN GET SUBBASINS/HILLS FOR NEW SMALLER BASIN
-subset_subbasin = F
-if (subset_subbasin) {
-  field = vect("preprocessing/spatial_source/fromseka/field site.shp")
-  fieldprj = project(field, subbasins)
-
-  subbasin_num = zonal(x = subbasins, z = fieldprj)
-
-  basin_site = subbasins
-  basin_site[basin_site != as.numeric(subbasin_num)] = NA
-  basin_site = trim(basin_site)
-  plot(basin_site)
-
-
-
-  library(leaflet)
-  library(mapedit)
-
-  basin_site_prj = project(basin_site, "EPSG:4326")
-
-  m <- leaflet() %>%
-    addTiles() %>%  # Add base map tiles
-    addRasterImage(basin_site_prj, opacity = 0.8)  # Add the raster layer
-  points <- mapedit::editMap(m)
-  gauge_new = vect(points$finished)
-  gauge_new = project(gauge_new,basin_site)
-
- 
-  plot(basin_site)
-  plot(gauge_new,add=T)
-  tl = textlocTL(basin_site)
-  textlab = paste0("Basin size: ",expanse(basin_site, unit = "km")[[2]],"sq km\nPatch count: ",
-  length(values(basin_site, na.rm=T)),"\n")
-  text(x = tl[1], y = tl[2], labels =textlab , col = "black", cex = 1, adj = c(0,1))
-
-  if (writeplots) {
-    dev.copy2pdf(file = file.path(output_dir, paste0("Subbasin_selection_thresh",stream_threshold,".pdf")), width = 8, height = 6)
-  }
-
-  writeVector(gauge_new, filename = file.path(output_dir, "gauge_subbasin.shp"))
+  # ================= IF IT IS GOOD ======================
+  file.rename(from = file.path(output_dir, "subbasins.tif"), file.path(output_dir, "subbasins_original.tif"))
+  file.rename(from = file.path(tmp_dir, "subbasins_new.tif"), file.path(output_dir, "subbasins.tif"))
 }
 
 # ==================== Slope and aspect ====================
-wbt_slope(dem = file.path(output_dir, "dem.tif"), output = file.path(output_dir, "slope.tif"), units = 'degrees')
-# aspect is standard (0 == 360 == NORTH )
-wbt_aspect(dem = file.path(output_dir, "dem.tif"), output = file.path(output_dir, "aspect.tif"))
-
-if (plots) {
-  par(mfrow = c(2, 2))
-  plot(rast(file.path(wb_tmp, "dem_brch.tif")), main = "Filled DEM")
-  plot(rast(file.path(wb_tmp, "dem_brch_accum_d8.tif")), main = "Flow Accumulation")
-  plot(rast(file.path(output_dir, "slope.tif")), main = "Slope")
-  plot(rast(file.path(output_dir, "aspect.tif")), main = "Aspect")
-  if (writeplots) {
-    dev.copy2pdf(file = file.path(output_dir, "plots1_dem_acc_slope_aspect.pdf"), width = 8, height = 6)
-  }
-}
-
-# ==================== Horizons + RHESSys Changes ====================
-wbt_horizon_angle(dem = file.path(output_dir, "dem.tif"), output = file.path(wb_tmp, "horizon_east.tif"), azimuth = 270, max_dist = 100000)
-wbt_horizon_angle(dem = file.path(output_dir, "dem.tif"), output = file.path(wb_tmp, "horizon_west.tif"), azimuth = 90, max_dist = 100000)
-# sin of radian horizon
-horizon_east_sin = sin(rast(file.path(wb_tmp, "horizon_east.tif")))
-horizon_west_sin = sin(rast(file.path(wb_tmp, "horizon_west.tif")))
-writeRaster(horizon_east_sin, file.path(output_dir, "e_horizon.tif"), overwrite = T)
-writeRaster(horizon_west_sin, file.path(output_dir, "w_horizon.tif"), overwrite = T)
-
-if (plots) {
-  par(mfrow = c(2, 2))
-  plot(rast(file.path(output_dir, "e_horizon.tif")), main = "East Horizon")
-  plot(rast(file.path(output_dir, "w_horizon.tif")), main = "West Horizon")
-  plot(rast( file.path(output_dir, "streams.tif")), main = "Streams")
-  plot(rast(file.path(output_dir, "subbasins.tif")), main = "Subbasins")
-  if (writeplots) {
-    dev.copy2pdf(file = file.path(output_dir, "plots2_horizons_streamfs_subbasins.pdf"), width = 8, height = 6)
-  }
-}
+maps_out2 = wbox_slope_aspect_horizons(dem_brch = maps_out[["DEM"]], plots = T, writeplots = T, overwrite = T)
 
 # ==================== Soils ====================
-# echo "import soils layers, originally from R-polaris workflow"
-# r.import input=C:\Users\burke\Documents\CARB\Pitman\preprocessing\spatial_source\POLARISOut\mean\clay\0_5\lat3738_lon-120-119.tif output=clay_0_5
-# r.import input=C:\Users\burke\Documents\CARB\Pitman\preprocessing\spatial_source\POLARISOut\mean\sand\0_5\lat3738_lon-120-119.tif output=sand_0_5
-# r.soils.texture sand=sand_0_5@PERMANENT clay=clay_0_5@PERMANENT scheme=C:\Users\burke\Documents\CARB\data\USDA.dat output=soil_texture
-# echo "import the soil texture"
-# r.proj input=soil_texture location=soil mapset=rhessys output=soil_texture method=nearest --v --o
-# r.out.gdal in=soil_texture output="%base%/soil_texture.tif" format=GTiff --o
+soil_texture = polaris2texture(
+  basin = maps_out[["basin"]], 
+  sand = "preprocessing/spatial_source/POLARISOut/mean/sand/0_5/lat3738_lon-120-119.tif",
+  clay = "preprocessing/spatial_source/POLARISOut/mean/clay/0_5/lat3738_lon-120-119.tif",
+  plot_out = file.path(output_dir, "SoilTextures_baseline.pdf")
+)
 
-library(soiltexture)
+reclasssoils = F
+if (reclasssoils) {
+  # soil_texture
+  rcl = as.matrix(data.frame(is = c(11,8), becomes = c(12,9)))
+  soil_texture_new <- classify(soil_texture, rcl)
 
-mask_map = rast(file.path(output_dir, "basin.tif"))
-
-clay = rast("preprocessing/spatial_source/POLARISOut/mean/clay/0_5/lat3940_lon-120-119.tif")
-sand = rast("preprocessing/spatial_source/POLARISOut/mean/sand/0_5/lat3940_lon-120-119.tif")
-
-clay_proj = project(clay, mask_map, method = "bilinear")
-clay_crop = crop(clay_proj, mask_map)
-clay_mask = mask(clay_crop, mask_map)
-
-sand_proj = project(sand, mask_map, method = "bilinear")
-sand_crop = crop(sand_proj, mask_map)
-sand_mask = mask(sand_crop, mask_map)
-
-# silt = "preprocessing/spatial_source/POLARISOut/mean/" # not needed since should be remainder
-texturedata = data.frame(CLAY = unname(values(clay_crop)), SILT = NA, SAND = unname(values(sand_crop)))
-texturedata$ind = seq(1,nrow(texturedata))
-texturedata$SILT = 100 - (texturedata$CLAY + texturedata$SAND)
-# summary(texturedata)
-
-# this should be the same as the grass function, getting texture from soil components
-texturedata$TextureName = TT.points.in.classes(tri.data  = texturedata, class.sys = "USDA.TT", PiC.type  = "t")
-
-usdaID = data.frame(name = c("clay","silty-clay", "silty-clay-loam", "sandy-clay", "sandy-clay-loam", "clay-loam",
-                             "silt","silt-loam","loam","sand","loamy-sand","sandy-loam"),
-                    ID = c(1:12),
-                    TextureName = c("Cl","SiCl", "SiClLo","SaCl","SaClLo","ClLo","Si","SiLo","Lo","Sa","LoSa","SaLo"))
-# to do the conversion between names, to make the above df
-# TT.classes.tbl(class.sys = "USDA.TT")
-texturedata = merge(texturedata,usdaID, by = "TextureName", allx = T, sort = F)
-texturedata = texturedata[order(texturedata$ind),]
-
-soil_texture = clay_crop
-names(soil_texture) = "soil_texture"
-nrow(texturedata) == length(values(soil_texture))
-values(soil_texture) = texturedata$ID
-
-soil_texture = mask(soil_texture, mask_map)
-
-# cat(paste(text_rep, collapse = "\n"))
-
-if (plots) {
-  tmp = unique(texturedata[texturedata$ID %in% unique(values(soil_texture, rm.na=T)),c("name","ID")])
-  rownames(tmp) = NULL
-  text_rep <- capture.output(print(tmp))
+  soil_texture_plot(soil_texture_new, file.path(output_dir, "SoilTextures_reclass.pdf"))
   
-  par(mfrow = c(1, 1))
-  plot(soil_texture, main = "Soil Textures")
-  tl = textlocTL(soil_texture)
-  textlab = paste(text_rep, collapse = "\n")
-  text(x = tl[1], y = tl[2], labels =textlab , col = "black", cex = 1, adj = c(0,1))
-
-  if (writeplots) {
-    dev.copy2pdf(file = file.path(output_dir, "SoilTextures_baseline.pdf"), width = 8, height = 6)
-  }
+  # ================= IF IT IS GOOD ======================
+  writeRaster(soil_texture_new, file.path(output_dir, "soils.tif"),overwrite=T)
 }
 
-# RECLASS HERE
-m = matrix(c(8, 12), 
-           ncol = 2, byrow = T)
-new_soil_texture = classify(soil_texture, m)
+# ==================== PATCH MAP ====================
 
-if (plots) {
-  tmp = unique(texturedata[texturedata$ID %in% unique(values(new_soil_texture, rm.na=T)),c("name","ID")])
-  rownames(tmp) = NULL
-  text_rep <- capture.output(print(tmp))
+p_map = rast("preprocessing/whitebox/dem.tif")
+names(p_map) = "patches"
+# resample to get unique patches 1 per cell
+values(p_map)[!is.nan(values(p_map))] = seq_along(values(p_map)[!is.nan(values(p_map))])
+# writeRaster(p_map, "preprocessing/spatial90m/patches.tif", overwrite=T)
+writeRaster(p_map, "preprocessing/whitebox/patches.tif", overwrite=T)
 
-  par(mfrow = c(1, 1))
-  plot(new_soil_texture, main = "Reclassed Soil Textures")
-  tl = textlocTL(new_soil_texture)
-  textlab = paste(text_rep, collapse = "\n")
-  text(x = tl[1], y = tl[2], labels =textlab , col = "black", cex = 1, adj = c(0,1))
 
-  if (writeplots) {
-    dev.copy2pdf(file = file.path(output_dir, "SoilTextures_reclass.pdf"), width = 8, height = 6)
-  }
-}
-
-writeRaster(new_soil_texture, file.path(output_dir, "soils.tif"),overwrite=T)
 
 # ==================== TROUBLESHOOTING -- Check Maps ====================
 if (testing) {

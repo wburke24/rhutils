@@ -4,7 +4,7 @@
 #' @export
 cleanup_wmfire = function(dir) {
   pat = "ETGridYear|FireFailedIterGridYear|FireSizes|FireSpreadIterGridYear|FireSpreadPropGridYear|LoadGridYear|PDefGridYear|
-  PETGridYear|PLoadGridYear|PSlopeGridYear|PWindGridYear|RelDefGridYear|SoilMoistGridYear|UnderETGridYear|UnderPETGridYear|VegLoadGridYear"
+  PETGridYear|PLoadGridYear|PSlopeGridYear|PWindGridYear|RelDefGridYear|SoilMoistGridYear|UnderETGridYear|UnderPETGridYear|VegLoadGridYear|CWDGridYear"
   files = list.files(path = dir, pattern = pat, full.names = F)
   dirname = paste0("fire_grids_out_", gsub( ":", ".", sub( " ", "_", Sys.time())))
   dir.create(path = file.path(dir, dirname))

@@ -18,11 +18,11 @@ library(terra)
 # 00065 	Gage Height 		00002 	Minimum
 # 00010 	Temperature 		00003 	Mean
 # 00400 	pH 	          	00008 	Median
-# site.ID    <- "11284400"
-# start.Date <- "1970-01-01" 
-# end.Date   <- "2022-09-30" 
-# data.code  <- "00060" # for streamflow
-# stat.code  <- "00003" # daily mean
+site.ID    <- "11284400"
+start.Date <- "1970-01-01" 
+end.Date   <- "2022-09-30" 
+data.code  <- "00060" # for streamflow
+stat.code  <- "00003" # daily mean
 
 # station.info <- readNWISsite(site.ID)
 
