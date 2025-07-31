@@ -28,3 +28,7 @@ output_vars_interest = c("stratum.cs.net_psn", "patch.sat_deficit", "patch.lai",
 output_cpools = c("stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "stratum.cs.live_crootc", "stratum.cs.dead_crootc", "stratum.cs.frootc", "stratum.cs.cwdc", "stratum.cs.cwdc_bg", "stratum.cs.gresp_transfer","stratum.cs.gresp_store")
 
 output_carbon_all = c(output_cpools, "stratum.cs.cwdc" )
+
+output_doc = c("patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.surface_DOC_Qin", "patch.surface_DOC_Qout", "patch.soil_cs.DOC","patch.soil_cs.DOC_Qin","patch.soil_cs.DOC_Qout", "patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
+
+output_doc_select = c("patch.soil_cs.totalc", "patch.soil_ns.totaln","patch.lai", "patch.totalc", "patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.soil_cs.DOC","patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
