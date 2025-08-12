@@ -17,19 +17,39 @@ world_add_level_i = function(world) {
 # add vegparmID col to worldfile dataframe - IF there are more than 1 strata, vegID is only or strata level
 #' @export
 world_add_patch_vegparmIDcol = function(world) {
-  # ---------- add patch and vegparm columns ----------
-  world$pID = world$ID
-  world$pID[!(world$level == "patch" | world$level == "canopy_strata")] = NA
-  world$pID[!is.na(world$pID) & world$level == "canopy_strata"] = 
-    substr(world$pID[!is.na(world$pID) & world$level == "canopy_strata"], 0, nchar(world$pID[!is.na(world$pID) & world$level == "canopy_strata"]) - 1 )
   
-  in_vegparm = world[world$vars == "veg_parm_ID", "values"]
-  in_patches = unique(world[world$level == "patch", "ID"])
-  in_veg_patches = data.table(in_vegparm, in_patches)
-  names(in_veg_patches) = c("vegparm", "pID")
-  world = merge.data.table(world, in_veg_patches, by = "pID", all.x = TRUE, sort = F)
+  if (!"patch_ID" %in% names(world)) {
+    index_patch = which(world$vars == "patch_ID")
+    if (length(index_patch) > 1) {
+      index_patch_max = c(index_patch[2:length(index_patch)] - 1, length(world$vars))
+    } else {
+      index_patch_max = length(world$vars)
+    }
+    world$patch_ID = c(rep(NA, index_patch[1]-1) ,unname(unlist(mapply(rep, world$values[index_patch], (index_patch_max - index_patch) + 1 ))))
+    world$patch_ID[world$level %in% c("basin", "hillslope","zone")] = NA
+  }
+
+  # get unique vegID combinations by patch
+  vegparm_by_patch <- world[world$vars == "veg_parm_ID", c("values", "patch_ID")][, .(veg_parm_ID = paste(values, collapse = "_")), by = patch_ID]
+
+  world = merge.data.table(world, vegparm_by_patch, by = "patch_ID", all.x = TRUE, sort = F)
   return(world)
 }
+# world_add_patch_vegparmIDcol = function(world) {
+#   # ---------- add patch and vegparm columns ----------
+#   world$pID = world$ID
+#   world$pID[!(world$level == "patch" | world$level == "canopy_strata")] = NA
+#   world$pID[!is.na(world$pID) & world$level == "canopy_strata"] = 
+#     substr(world$pID[!is.na(world$pID) & world$level == "canopy_strata"], 0, nchar(world$pID[!is.na(world$pID) & world$level == "canopy_strata"]) - 1 )
+  
+#   in_vegparm = world[world$vars == "veg_parm_ID", "values"]
+#   in_patches = unique(world[world$level == "patch", "ID"])
+#   in_veg_patches = data.table(in_vegparm, in_patches)
+#   names(in_veg_patches) = c("vegparm", "pID")
+#   world = merge.data.table(world, in_veg_patches, by = "pID", all.x = TRUE, sort = F)
+#   return(world)
+# }
+
 
 # add family ID and rule ID, will cover the strata and patches
 #' @export
@@ -64,11 +84,16 @@ world_add_familyID_RuleID = function(world) {
 # extract a world based on a target unique index ID
 #' @export
 extract_world = function(world, target_unique_ID) {
+  
+  world = world_add_level_i(world)
+  
   # use to look up parent/child levels
   IDworld = world[
     which(world$vars == "world_ID" | world$vars == "basin_ID" | world$vars == "hillslope_ID" |
             world$vars == "zone_ID" | world$vars == "patch_ID" | world$vars == "canopy_strata_ID"), 
-    c("pID", "ID", "unique_ID", "level_i", "vegparm", "i")]
+    c("ID", "unique_ID", "level_i", "i")]
+  
+  # c("patch_ID", "ID", "unique_ID", "level_i", "veg_parm_ID", "i")
   
   target = IDworld[unique_ID == target_unique_ID,]
   # Parents should only be single levels, ie if target is a patch, you only need the single encompassing zone
