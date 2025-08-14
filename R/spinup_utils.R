@@ -17,7 +17,6 @@ world_add_level_i = function(world) {
 # add vegparmID col to worldfile dataframe - IF there are more than 1 strata, vegID is only or strata level
 #' @export
 world_add_patch_vegparmIDcol = function(world) {
-  
   if (!"patch_ID" %in% names(world)) {
     index_patch = which(world$vars == "patch_ID")
     if (length(index_patch) > 1) {
@@ -30,10 +29,11 @@ world_add_patch_vegparmIDcol = function(world) {
   }
 
   # get unique vegID combinations by patch
-  vegparm_by_patch <- world[world$vars == "veg_parm_ID", c("values", "patch_ID")][, .(veg_parm_ID = paste(values, collapse = "_")), by = patch_ID]
+  world = as.data.table(world)
+  vegparm_by_patch <- world[world$vars == "veg_parm_ID", .(values, patch_ID)][, .(veg_parm_ID = paste(values, collapse = "_")), by = patch_ID]
 
   world = merge.data.table(world, vegparm_by_patch, by = "patch_ID", all.x = TRUE, sort = F)
-  return(world)
+  return(as.data.frame(world))
 }
 # world_add_patch_vegparmIDcol = function(world) {
 #   # ---------- add patch and vegparm columns ----------
