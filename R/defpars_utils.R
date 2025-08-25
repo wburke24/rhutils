@@ -361,8 +361,12 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
   # ============================== GET DEF PARS IN USABLE FORMAT ==============================
   defpar_df = defpars_list2df(input_def_pars)
   defpar_df_t = as.data.frame(t(defpar_df[,c(3:ncol(defpar_df))]))
-  names(defpar_df_t) = paste0(defpar_df$Variable,"--", defpar_df$Def_file)
-
+  if ("Variable" %in% names(defpar_df)) {
+    names(defpar_df_t) = paste0(defpar_df$Variable,"--", defpar_df$Def_file)
+  } else {
+    names(defpar_df_t) = paste0(defpar_df$Parameter,"--", defpar_df$File)
+  }
+  
   # ============================== GET RESPONSE VARS/METRICS ==============================
   sim_DT = get_basin_daily(out_dir)
   vars = names(sim_DT)[!names(sim_DT) %in% c("day", "month", "year", "basinID", "run", "date", "wy", "yd")]
