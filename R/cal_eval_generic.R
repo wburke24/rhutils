@@ -1,10 +1,10 @@
-#' cal_eval
+#' cal_eval_generic
 #'
 #' Takes either the paths to simulated and observed GENERIC DATA he dataframes/datatables themselves, and calculates
 #' nse, lognse, pbias, rmse, and r2, at either daily or monthly. Requires get_basin_daily from rhutils and the datatable packges.
 #' @export
 
-cal_eval = function(sim, obs, col, monthly = F, echo_best = T) {
+cal_eval_generic = function(sim, obs, col, monthly = F, echo_best = T) {
   # this should handle if you give it a path
   # it doesn't fix  not including baseflow when using output filters,
   # so i usually input the data after i've fixed that, and not the path
