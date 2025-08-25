@@ -107,7 +107,7 @@ patches2patchfamily = function(output_df) {
 
 # ================================================================================
 # aggregate to patches to basin by veg parm ID using area weights
-#' @export
+# @export
 # patches2basinvegID = function(output_df) {
 #
 #   aggvars = names(output_df)[!names(output_df) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "area", "familyID", "family_area", "area_prop")]

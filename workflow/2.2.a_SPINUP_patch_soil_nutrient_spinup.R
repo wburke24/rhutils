@@ -1,13 +1,12 @@
 # soil_spin
 library(RHESSysIOinR)
 library(rhutils)
-source("R/output_aliases.R")
 
 # Uses a worldfile to generate single patch worlds based on each veg parameter, then runs each world and reincorporates the
 # resulting soil nutrient values into the original worldfile
 
 # ---------- Input world ----------
-world_path = "worldfiles/RedRockMSR30m_tree2shrubnobare.world"
+world_path = "worldfiles/Ward60_std_soilspin1.world"
 flow_path = "flowtables/RedRockMSR30m_tree2shrubnobare.flow"
 dest = "soil_spin"
 if (!dir.exists(file.path("worldfiles",dest))) {
@@ -20,35 +19,20 @@ if (!dir.exists(file.path("flowtables",dest))) {
 # read world
 world = as.data.table(read_world(world_path, hill_col = T, zone_col = T, patch_col = T))
 # add cols
-world = world_add_level_i(world)
+# world = world_add_level_i(world)
 world = world_add_patch_vegparmIDcol(world)
-world = world_add_familyID_RuleID(world)
 
 # --------- STANDARD VERSION -------------- make worlds from veg
-standard = F
+standard = T
 if (standard) {
-  veg = unique(world$vegparm[!is.na(world$vegparm)])
-  output_world_paths = file.path("worldfiles",dest, paste0(gsub(".world","", basename(world_path)),"_vegID", veg,".world")) 
+  veg = unique(world$veg_parm_ID[!is.na(world$veg_parm_ID)])
+  output_world_paths = file.path("worldfiles",dest, paste0(gsub(".world","", basename(world_path)),"_vegID", veg,".world"))
   output_flow_paths = file.path("flowtables",dest, paste0(gsub(".world","", basename(world_path)),"_vegID", veg,".flow")) 
   # ---------- Make 1 Patch Worlds ----------
   # selecting patches based on single veg parm IDs, since world is 1 strata
-  p1_veg = rbindlist(lapply(veg, function(x) world[min(which(world$vegparm == x)), ]))
+  p1_veg = rbindlist(lapply(veg, function(x) world[min(which(world$veg_parm_ID == x)), ]))
   # make new worlds
   newworlds = lapply(p1_veg$unique_ID, FUN = extract_world, world = world)
-}
-
-# --------------- MSR Version -----------------
-msr = T
-if (msr) {
-  rules = unique(world$rule_ID)
-  rules = rules[!is.na(rules)]
-  output_world_paths = file.path("worldfiles",dest, paste0(gsub(".world","", basename(world_path)),"_ruleID", rules,".world"))
-  output_flow_paths = file.path("flowtables",dest, paste0(gsub(".world","", basename(world_path)),"_ruleID", rules,".flow"))  
-  # select patch families
-  pfams = lapply(rules, select_pfam, world)
-  pfams = unlist(pfams)
-  # make new worlds
-  newworlds = lapply(pfams, FUN = pfam_extract_world, world = world)
 }
 
 mapply(write_world,newworlds,output_world_paths)
@@ -182,42 +166,43 @@ if (manualpara) {
 # -------------------- New World with Spun Soil Nutrients --------------------
 newworld = F
 if (newworld) {
-# choosing the Y2750 worlds
-world_path_spun = list.files("worldfiles/Soil_spin_worlds/","Y2750", full.names = T)
+  # choosing the Y2750 worlds
+  world_path_spun = list.files("worldfiles/Soil_spin_worlds/","Y2750", full.names = T)
+  world_path_spun = list.files("worldfiles/soil_spin/", full.names = T)
 
-# world_path_spun = c("worldfiles/Soil_spin_worlds/Ward_msr90m_vegID1.world.Y2979M9D30H23.state",
-#                "worldfiles/Soil_spin_worlds/Ward_msr90m_vegID3.world.Y2979M9D30H23.state",
-#                "worldfiles/Soil_spin_worlds/Ward_msr90m_vegID4.world.Y2979M9D30H23.state",
-#                "worldfiles/Soil_spin_worlds/Ward_msr90m_vegID5.world.Y2979M9D30H23.state")
+  # world_path_spun = c("worldfiles/Soil_spin_worlds/Ward_msr90m_vegID1.world.Y2979M9D30H23.state",
+  #                "worldfiles/Soil_spin_worlds/Ward_msr90m_vegID3.world.Y2979M9D30H23.state",
+  #                "worldfiles/Soil_spin_worlds/Ward_msr90m_vegID4.world.Y2979M9D30H23.state",
+  #                "worldfiles/Soil_spin_worlds/Ward_msr90m_vegID5.world.Y2979M9D30H23.state")
 
-worlds_spun = lapply(world_path_spun, FUN = function(X){as.data.table(read_world(X))})
-worlds_spun = lapply(worlds_spun, world_add_level_i)
-worlds_spun = lapply(worlds_spun, world_add_patch_vegparmIDcol)
+  worlds_spun = lapply(world_path_spun, FUN = function(X){as.data.table(read_world(X))})
+  worlds_spun = lapply(worlds_spun, world_add_patch_vegparmIDcol)
 
-soil_vars = c("soil_cs.soil1c",  "soil_cs.soil2c", "soil_cs.soil3c", 
-              "soil_cs.soil4c", "soil_ns.sminn", "soil_ns.nitrate"
-              # "litter.rain_stored", "litter_cs.litr1c", "litter_ns.litr1n", 
-              # "litter_cs.litr2c", "litter_cs.litr3c", "litter_cs.litr4c", 
-              # "rootzone.depth", "snow_stored", "rain_stored", 
-              # "epv.wstress_days", "epv.max_fparabs", "epv.min_vwc", 
-              # "gw.storage", "gw.NO3"
-              )
+  soil_vars = c("soil_cs.soil1c",  "soil_cs.soil2c", "soil_cs.soil3c", 
+                "soil_cs.soil4c", "soil_ns.sminn", "soil_ns.nitrate"
+                # "litter.rain_stored", "litter_cs.litr1c", "litter_ns.litr1n", 
+                # "litter_cs.litr2c", "litter_cs.litr3c", "litter_cs.litr4c", 
+                # "rootzone.depth", "snow_stored", "rain_stored", 
+                # "epv.wstress_days", "epv.max_fparabs", "epv.min_vwc", 
+                # "gw.storage", "gw.NO3"
+                )
 
-world_dest = as.data.table(read_world(world_path))
-world_dest = world_add_level_i(world_dest)
-world_dest = world_add_patch_vegparmIDcol(world_dest)
+  world_dest = as.data.table(read_world(world_path))
+  world_dest = world_add_patch_vegparmIDcol(world_dest)
 
-vegids = as.numeric(gsub("vegID","", regmatches(world_path_spun, regexpr("vegID\\d+", world_path_spun))))
-
-# ew bad
-for (vid in vegids) {
-  for (v in soil_vars) {
-    world_dest[vars %in% soil_vars & vegparm == vid & vars == v, "values"] = 
-      worlds_spun[[which(vegids == vid)]][vars %in% soil_vars & vegparm == vid & vars == v, "values"]
+  library(stringr)
+  # vegids = as.numeric(gsub("vegID","", regmatches(world_path_spun, regexpr("vegID\\d+", world_path_spun))))
+  vegids = str_extract(world_path_spun, "(?<=vegID)\\d+(?:_\\d+)?(?=\\.world)")
+    
+  # ew bad
+  for (vid in vegids) {
+    for (v in soil_vars) {
+      world_dest[vars %in% soil_vars & veg_parm_ID == vid & vars == v, "values"] = 
+        worlds_spun[[which(vegids == vid)]][vars %in% soil_vars & veg_parm_ID == vid & vars == v, "values"]
+    }
   }
-}
 
-write_world(world_dest, gsub(".world", "_patchsoilspin.world", world_path))
+  write_world(world_dest, gsub(".world", "_patchsoilspin.world", world_path))
 }
 
 
