@@ -32,3 +32,5 @@ output_carbon_all = c(output_cpools, "stratum.cs.cwdc" )
 output_doc = c("patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.surface_DOC_Qin", "patch.surface_DOC_Qout", "patch.soil_cs.DOC","patch.soil_cs.DOC_Qin","patch.soil_cs.DOC_Qout", "patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
 
 output_doc_select = c("patch.soil_cs.totalc", "patch.soil_ns.totaln","patch.lai", "patch.totalc", "patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.soil_cs.DOC","patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
+
+output_vars_set1 = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "patch.lai", "patch.rootzone.depth", "patch.rz_storage","patch.unsat_storage", "stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "patch.evaporation","patch.evaporation_surf","patch.transpiration_unsat_zone","patch.transpiration_sat_zone","stratum.epv.height")
