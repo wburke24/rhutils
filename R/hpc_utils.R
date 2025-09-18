@@ -100,7 +100,8 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
 rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.5", dest, usr,
                                input_rhessys = NULL, input_hdr = NULL, input_def_pars = NULL, input_tec_data = NULL, output_filter = NULL,
                                filelist = NULL,
-                               transfer_method = "scp") {
+                               transfer_method = "scp",
+                               rsa_loc = "~/rsa_key") {
   # ----- input checks -----
   if (!endsWith(usr,":") ) {usr = paste0(usr,":")}
   #fix output strings and write to file
@@ -115,20 +116,20 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
     for (i in seq_along(unique(dirname(filelist$def_files)))) {
       defdir = unique(dirname(filelist$def_files))[i]
       defdirfiles = filelist$def_files[dirname(filelist$def_files) == defdir]
-      defstr = c(defstr,paste0("scp -i ~/rsa_key -p ",paste(defdirfiles,collapse =" ")," ", usr,dest,defdir))
+      defstr = c(defstr,paste0("scp -i ",rsa_loc," -p ",paste(defdirfiles,collapse =" ")," ", usr,dest,defdir))
     }
 
     scptxt =
       c(
-        paste0("scp -i ~/rsa_key -p ",paste(filelist$tec_files,collapse =" ")," ", usr,dest,"tecfiles/"),
-        paste0("scp -i ~/rsa_key -p ",paste(filelist$outputfilters,collapse =" ")," ", usr,dest,"output/filters"),
-        paste0("scp -i ~/rsa_key -p ",paste(filelist$hdr_files,collapse =" ")," ", file.path(usr,dest,unique(dirname(filelist$hdr_files)))),
+        paste0("scp -i ", rsa_loc, " -p ",paste(filelist$tec_files,collapse =" ")," ", usr,dest,"tecfiles/"),
+        paste0("scp -i ", rsa_loc, " -p ",paste(filelist$outputfilters,collapse =" ")," ", usr,dest,"output/filters"),
+        paste0("scp -i ", rsa_loc, " -p ",paste(filelist$hdr_files,collapse =" ")," ", file.path(usr,dest,unique(dirname(filelist$hdr_files)))),
         defstr,
-        paste0("scp -i ~/rsa_key -p ",rhout_str," ", usr,dest,"scripts")
+        paste0("scp -i ", rsa_loc, " -p ",rhout_str," ", usr,dest,"scripts")
       )
 
     remote_dirs = paste(unique(dirname(filelist$all_files)),collapse = " ")
-    dircmd = paste0("wsl ssh -i ~/rsa_key ", gsub(":","",usr)," \"cd ",dest,"&& mkdir -p ",remote_dirs,"\"")
+    dircmd = paste0("wsl ssh -i ", rsa_loc, " ", gsub(":","",usr)," \"cd ",dest,"&& mkdir -p ",remote_dirs,"\"")
     cat("\nMaking dirs: ",dircmd,"\n\n")
     system(dircmd)
 
