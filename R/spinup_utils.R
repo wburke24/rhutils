@@ -84,9 +84,17 @@ world_add_familyID_RuleID = function(world) {
 # extract a world based on a target unique index ID
 #' @export
 extract_world = function(world, target_unique_ID) {
+
+  if ("level_i" %in% names(world)) {
+    cat("level_i already present in world\n")
+  } else {
+    cat("adding level_i to world\n")
+    world = world_add_level_i(world)
+  }
   
-  world = world_add_level_i(world)
-  
+  # use data.table for easier subsetting
+  world = as.data.table(world)
+
   # use to look up parent/child levels
   IDworld = world[
     which(world$vars == "world_ID" | world$vars == "basin_ID" | world$vars == "hillslope_ID" |

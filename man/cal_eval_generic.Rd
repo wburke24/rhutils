@@ -4,9 +4,16 @@
 \alias{cal_eval_generic}
 \title{cal_eval_generic}
 \usage{
-cal_eval_generic(sim, obs, col, monthly = F, echo_best = T)
+cal_eval_generic(
+  sim,
+  obs,
+  compare_col,
+  eval_monthly = F,
+  obs_is_monthly = F,
+  echo_best = T,
+  agg_by = "mean"
+)
 }
 \description{
-Takes either the paths to simulated and observed GENERIC DATA he dataframes/datatables themselves, and calculates
-nse, lognse, pbias, rmse, and r2, at either daily or monthly. Requires get_basin_daily from rhutils and the datatable packges.
+Calculates calibration statistics: nse, lognse, pbias, rmse, and r2, at either daily or monthly.
 }

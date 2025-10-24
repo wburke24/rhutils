@@ -269,7 +269,7 @@ write_basestation = function(dest, year_start_index = 1900, search_dist, netcdf_
   cat("Created basestation file. Basestation header info: \n")
   print(rbind(bshead, f))
   
-  write.table(bs, dest, row.names = F, col.names = F, quote = F)
+  write.table(bs_stations, dest, row.names = F, col.names = F, quote = F)
   cat("Wrote basestation file '",dest,"'", sep="")
 
   return("done")

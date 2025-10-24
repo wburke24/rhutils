@@ -20,8 +20,7 @@ output_vars_waterbal = c("patch.evaporation","patch.evaporation_surf", "patch.ex
                          "stratum.Kstar_potential_both", "patch.total_water_in", "patch.litter.rain_stored", "hill.gw.storage","patch.canopy_rain_stored",
                          "patch.canopy_snow_stored")
 
-output_vars_minimal = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "stratum.cs.net_psn", 
-                        "patch.sat_deficit", "patch.lai", "patch.totalc", "patch.evaporation", "patch.streamflow")
+output_vars_minimal = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "stratum.cs.net_psn", "patch.lai", "patch.totalc", "patch.evaporation", "patch.streamflow", "patch.snowpack.water_equivalent_depth", "patch.rootzone.depth", "patch.transpiration_unsat_zone", "patch.transpiration_sat_zone")
 
 output_vars_interest = c("stratum.cs.net_psn", "patch.sat_deficit", "patch.lai", "patch.totalc", "patch.evaporation", "patch.streamflow")
 
@@ -34,3 +33,27 @@ output_doc = c("patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_
 output_doc_select = c("patch.soil_cs.totalc", "patch.soil_ns.totaln","patch.lai", "patch.totalc", "patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.soil_cs.DOC","patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
 
 output_vars_set1 = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "patch.lai", "patch.rootzone.depth", "patch.rz_storage","patch.unsat_storage", "stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "patch.evaporation","patch.evaporation_surf","patch.transpiration_unsat_zone","patch.transpiration_sat_zone","stratum.epv.height")
+
+cat("Defined output variable aliases:\n")
+cat("output_vars_soils\n")
+cat("output_vars_streamflowcal\n")
+cat("output_vars_waterbal\n")
+cat("output_vars_minimal\n")
+cat("output_vars_interest\n")
+cat("output_cpools\n")
+cat("output_carbon_all\n")
+cat("output_doc\n")
+cat("output_doc_select\n")
+cat("output_vars_set1\n")
+
+
+# cat("  Soils spinup vars:", paste(output_vars_soils, collapse = ", "), "\n")
+# cat("  Streamflow calibration vars:", paste(output_vars_streamflowcal, collapse = ", "), "\n")
+# cat("  Water balance vars:", paste(output_vars_waterbal, collapse = ", "), "\n")
+# cat("  Minimal vars:", paste(output_vars_minimal, collapse = ", "), "\n")
+# cat("  Interest vars:", paste(output_vars_interest, collapse = ", "), "\n")
+# cat("  Carbon pool vars:", paste(output_cpools, collapse = ", "), "\n")
+# cat("  All carbon vars:", paste(output_carbon_all, collapse = ", "), "\n")
+# cat("  DOC vars:", paste(output_doc, collapse = ", "), "\n")
+# cat("  Selected DOC vars:", paste(output_doc_select, collapse = ", "), "\n")
+# cat("  Set1 vars:", paste(output_vars_set1, collapse = ", "), "\n")
