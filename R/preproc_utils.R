@@ -84,7 +84,7 @@ check_template = function(template) {
   cat("\n==================================================\n")
 }
 
-#' @export
+
 # fill missing map data
 fill_missing_raster_data = function(target_raster, mask_map, iterations = 1, window = 3, fun = "mean") {
   if (!(fun == "mean" | fun == "mode")) {
@@ -146,4 +146,16 @@ fill_missing_raster_data = function(target_raster, mask_map, iterations = 1, win
   cat("Re masking by mask map\n")
   cat("Double check missing cells: ", missing_cells,"\n")
   return(r)
+}
+
+# Convert basin raster to utm grid id
+#' @export
+basin2utm = function(basin) {
+  if (!is.lonlat(basin)) {
+    cat("Converting basin to lonlat assuming WGS84 proj\n")
+    basin = project(basin, "EPSG:4326")
+  }
+  long = ext(basin)[1] + (ext(basin)[2] - ext(basin)[1])/2
+  utm = unname((floor((long + 180)/6) %% 60) + 1)
+  return(utm)
 }

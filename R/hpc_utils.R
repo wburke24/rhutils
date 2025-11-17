@@ -172,3 +172,25 @@ collapse_rh_input_files_list = function(filelist) {
   }
   return(filelist_new)
 }
+
+
+#' @export
+# Test SSH to pronghorn via WSL using ~/rsa_key
+test_pronghorn_ssh <- function(user = "wburke@pronghorn.rc.unr.edu",
+                              key = "~/rsa_key",
+                              timeout = 10,
+                              remote_cmd = "echo ok") {
+  cmd <- "wsl"
+  args <- c(
+    "ssh",
+    "-i", key,
+    "-o", "BatchMode=yes",
+    "-o", "StrictHostKeyChecking=accept-new",
+    "-o", sprintf("ConnectTimeout=%d", timeout),
+    user, remote_cmd
+  )
+  out <- tryCatch(system2(cmd, args, stdout = TRUE, stderr = TRUE),
+                  error = function(e) structure(character(), status = 1L, class = "try-error"))
+  status <- attr(out, "status"); if (is.null(status)) status <- 0L
+  list(ok = identical(status, 0L), status = status, stdout = out)
+}

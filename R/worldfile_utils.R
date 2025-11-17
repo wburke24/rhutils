@@ -116,3 +116,41 @@ patches2patchfamily = function(output_df) {
 #   df_out = output_df[,lapply(.SD, sum) ,by = c("basinID", "hillID", "zoneID", "familyID", "year","month","day"), .SDcols = c(aggvars,"area")]
 #   return(df_out)
 # }
+
+# ================================================================================
+# add var in worldfile below specified loc_var
+#' @export
+world_add_var = function(world, var, value, loc_var) {
+  
+  insert_pos <- which(world$vars == loc_var)
+  # Row to insert
+  insert_row = world[insert_pos[1],]
+  insert_row$values = value
+  insert_row$vars = var
+
+  insert_pos_shift = insert_pos - shift(insert_pos,1,fill = 0)
+  insert_pos_factor = rep(seq_along(insert_pos), insert_pos_shift)
+  insert_pos_factor = c(insert_pos_factor, rep(tail(insert_pos_factor,1)+1, nrow(world)-tail(insert_pos,1)))
+
+  world_split = split(world,insert_pos_factor)
+  world_split = lapply(world_split, function(X,Y) {
+    tmp = rbind(X,Y);tmp[nrow(tmp),"unique_ID"] = tmp[nrow(tmp)-1,"unique_ID"];return(tmp)
+  }, insert_row)
+  
+  world_comb = rbindlist(world_split)
+  world_comb = world_comb[-nrow(world_comb),]
+
+  return(world_comb)
+  
+
+  # Adjust for shifting indices after insertion
+  # offset <- 0
+  # for (pos in insert_positions) {
+  #   world <- rbind(
+  #     world[1:(pos + offset), ],
+  #     insert_row,
+  #     world[(pos + offset + 1):nrow(world), ]
+  #   )
+  #   offset <- offset + 1
+  # }
+}

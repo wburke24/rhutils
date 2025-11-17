@@ -4,20 +4,21 @@
 # resample and trim dem, make breach, d8 pointer, d8 accum, gauge snap, basin extent
 #' @export
 wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_threshold = 100, gauge_snap_dist = 90, output_dir, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
-  # copy and trim source DEM -- could clip manually here too
+
+  # ==================== copy and trim source DEM ====================
   dem_source = trim(rast(source_dem))
   dem_resample = resample(dem_source, rast(ext(dem_source),resolution = res))
   writeRaster(dem_resample, file.path(tmp_dir,"dem_trim.tif"), overwrite=overwrite)
 
   if (plots) {
-    plot(rast(file.path(tmp_dir,"dem_trim.tif")), main = paste0("DEM Resampled to ",res,"m"))
+    terra::plot(rast(file.path(tmp_dir,"dem_trim.tif")), main = paste0("DEM Resampled to ",res,"m"))
   } 
+
   # ==================== Fill, d8 direction, accumulation ====================
   ## Breach depressions to ensure continuous flow
   wbt_breach_depressions(dem = file.path(tmp_dir,"dem_trim.tif"), output = file.path(tmp_dir, "dem_brch.tif"))
   # wbt_breach_depressions_least_cost(dem = file.path(tmp_dir,"dem_trim.tif"), output = file.path(tmp_dir, "dem_brch.tif"), dist = 50)
   # wbt_fill_depressions(dem = file.path(tmp_dir,"dem_trim.tif"), output = file.path(tmp_dir, "dem_brch.tif"))
-
   ## Generate d8 flow pointer (note: other flow directions are available)
   wbt_d8_pointer(dem = file.path(tmp_dir, "dem_brch.tif"), output = file.path(tmp_dir, "dem_brch_ptr_d8.tif"))
   # this is fractional? d8, more equivilent to previous grass method
@@ -25,8 +26,6 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
   ## Generate d8 flow accumulation in units of cells (note: other flow directions are available)
   wbt_d8_flow_accumulation(input = file.path(tmp_dir, "dem_brch.tif"), output = file.path(tmp_dir, "dem_brch_accum_d8.tif"), out_type = "cells")
   # wbt_fd8_flow_accumulation(dem = file.path(tmp_dir, "dem_brch.tif"), output = file.path(tmp_dir, "dem_brch_accum_fd8.tif"), out_type = "cells")
-  # maps_out = c("dem_brch" = file.path(tmp_dir, "dem_brch.tif"), "dem_dir" = file.path(tmp_dir, "dem_brch_ptr_d8.tif"), "dem_accum" = file.path(tmp_dir, "dem_brch_accum_d8.tif"))
-  # return(maps_out)
 
   wbt_extract_streams(flow_accum = file.path(tmp_dir, "dem_brch_accum_d8.tif"), output = file.path(tmp_dir, "streams.tif"), threshold = stream_threshold)
   
@@ -52,9 +51,9 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
   }
 
   if (plots) {
-    plot(rast(file.path(tmp_dir, "streams.tif")), main = paste0("Streams & pour point"),col="black")
-    plot(vect(source_gauge),add=T ,col="red", , pch = 19, cex = 1.5)
-    plot(vect(file.path(output_dir, "gauge_loc_snap.shp")),add=T ,col="blue", , pch = 17, cex = 1.5)
+    terra::plot(rast(file.path(tmp_dir, "streams.tif")), main = paste0("Streams & pour point"),col="black")
+    terra::plot(vect(source_gauge),add=T ,col="red", pch = 19, cex = 1.5)
+    terra::plot(vect(file.path(output_dir, "gauge_loc_snap.shp")),add=T ,col="blue", pch = 17, cex = 1.5)
     legend("topright", legend = c("Source gauge", "Snapped gauge"),col = c("red","blue"), pch = c(19, 17), pt.cex = 1.5, bty = "n")
   }
 
@@ -79,13 +78,13 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
 
   if (plots) {
     par(mfrow=c(1,1), mar=c(3,3,3,7))
-    plot(rast(file.path(output_dir, "basin.tif")))
+    terra::plot(rast(file.path(output_dir, "basin.tif")))
     par(mfrow=c(1,1), mar=c(3,3,3,7), new=TRUE)
-    plot(rast(file.path(output_dir, "streams.tif")), add=T, col="black")
+    terra::plot(rast(file.path(output_dir, "streams.tif")), add=T, col="black")
     par(mfrow=c(1,1), mar=c(3,3,3,7), new=TRUE)
-    plot(vect(file.path(output_dir, "gauge_loc_snap.shp")), add=T,col="red")
+    terra::plot(vect(file.path(output_dir, "gauge_loc_snap.shp")), add=T,col="red")
     par(mfrow=c(1,1), mar=c(3,3,3,7), new=TRUE)
-    plot(vect(source_gauge), add=T,col="blue")
+    terra::plot(vect(source_gauge), add=T,col="blue")
 
     if (writeplots) {
       dev.copy2pdf(file = file.path(output_dir, "basin_unmasked_streamsgauge.pdf"), width = 8, height = 6)
@@ -105,6 +104,67 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
 # streams = maps_out[["streams"]]
 # basin = maps_out[["basin"]]
 # DEM = maps_out[["DEM"]]
+
+# ================================================================================
+# trim all maps to basin if needed
+#' @export
+wbox_trim_to_basin_overwrite = function(maps, basin, output_dir, plots = T, writeplots = T) {
+  basin_rast = trim(rast(basin))
+  if ("gauge_snap" %in% names(maps)) {
+    maps_all = maps
+    maps = maps[!names(maps) %in% c("gauge_snap")]
+  }
+
+  # trim all maps to basin
+  # "basin" - trim to itself
+  message(paste0("Trimming basin..."))
+  map_trimmed = crop(rast(maps[["basin"]]), basin_rast)
+  tmpfile = tempfile(fileext = ".tif")
+  writeRaster(map_trimmed, tmpfile, overwrite = TRUE)
+  file.rename(tmpfile, maps[["basin"]])
+  # "DEM" - trim to basin
+  message(paste0("Trimming DEM to basin..."))
+  map_trimmed = crop(rast(maps[["DEM"]]), basin_rast)
+  tmpfile = tempfile(fileext = ".tif")
+  writeRaster(map_trimmed, tmpfile, overwrite = TRUE)
+  file.rename(tmpfile, maps[["DEM"]])
+  # "streams" - trim to basin
+  message(paste0("Trimming streams to basin..."))
+  map_trimmed = crop(rast(maps[["streams"]]), basin_rast)
+  tmpfile = tempfile(fileext = ".tif")
+  writeRaster(map_trimmed, tmpfile, overwrite = TRUE)
+  file.rename(tmpfile, maps[["streams"]])
+  
+  # for (mapname in names(maps)) {
+  #   message(paste0("Trimming ", mapname, " to basin..."))
+  #   map_trimmed = crop(rast(maps[[mapname]]), basin_rast)
+  #   tmpfile = tempfile(fileext = ".tif")
+  #   writeRaster(map_trimmed, tmpfile, overwrite = TRUE)
+  #   file.rename(tmpfile, maps[[mapname]])
+  #   # writeRaster(map_trimmed, filename = maps[[mapname]], overwrite = T)
+  # }
+  nmaps = length(names(maps))
+  rowcol = ceiling(sqrt(nmaps))
+
+  if (plots) {
+    # Loop through and plot maps in grid
+    par(mfrow=c(rowcol,rowcol), mar=c(3,3,3,3))
+    for (i in seq_along(maps)) {
+      terra::plot(rast(maps[i]), main = names(maps)[i])
+    }
+    if (writeplots) {
+      dev.copy2pdf(file = file.path(output_dir, "maps_trimmed.pdf"), width = 8, height = 6)
+    }
+  }
+
+  if (exists("maps_all")) {
+    maps_all[names(maps)] = maps
+    maps = maps_all
+  }
+
+  return(maps)
+
+}
 
 # ================================================================================
 # get subbasins
@@ -136,10 +196,11 @@ wbox_slope_aspect_horizons = function(dem_brch, plots = T, writeplots = T, overw
 
   if (plots) {
     par(mfrow = c(2, 2))
-    plot(rast(dem_brch), main = "Filled DEM")
-    # plot(rast(file.path(tmp_dir, "dem_brch_accum_d8.tif")), main = "Flow Accumulation")
-    plot(rast(file.path(output_dir, "slope.tif")), main = "Slope")
-    plot(rast(file.path(output_dir, "aspect.tif")), main = "Aspect")
+    terra::plot(rast(dem_brch), main = "Filled DEM", col = terrain.colors(50))
+    # terra::plot(rast(file.path(tmp_dir, "dem_brch_accum_d8.tif")), main = "Flow Accumulation")
+    terra::plot(rast(file.path(output_dir, "slope.tif")), main = "Slope", col = colorRampPalette(c("white", "yellow", "orange", "red", "brown"))(50))
+    asp_cols <- colorRampPalette(c("red", "yellow", "green", "cyan", "blue", "magenta", "red"))(72)   # 5-degree bins
+    terra::plot(rast(file.path(output_dir, "aspect.tif")), main = "Aspect", col=asp_cols)
     if (writeplots) {
       dev.copy2pdf(file = file.path(output_dir, "plot_DEM_slope_aspect.pdf"), width = 8, height = 6)
     }
@@ -148,16 +209,16 @@ wbox_slope_aspect_horizons = function(dem_brch, plots = T, writeplots = T, overw
   # ==================== Horizons + RHESSys Changes ====================
   wbt_horizon_angle(dem = dem_brch, output = file.path(tmp_dir, "horizon_east.tif"), azimuth = 270, max_dist = 100000)
   wbt_horizon_angle(dem = dem_brch, output = file.path(tmp_dir, "horizon_west.tif"), azimuth = 90, max_dist = 100000)
-  # sin of radian horizon
-  horizon_east_sin = sin(rast(file.path(tmp_dir, "horizon_east.tif")))
-  horizon_west_sin = sin(rast(file.path(tmp_dir, "horizon_west.tif")))
+  # sin of horizon in radians
+  horizon_east_sin = sin(rast(file.path(tmp_dir, "horizon_east.tif")) * pi/180)
+  horizon_west_sin = sin(rast(file.path(tmp_dir, "horizon_west.tif")) * pi/180)
   writeRaster(horizon_east_sin, file.path(output_dir, "e_horizon.tif"), overwrite = T)
   writeRaster(horizon_west_sin, file.path(output_dir, "w_horizon.tif"), overwrite = T)
 
   if (plots) {
-    par(mfrow = c(2, 1))
-    plot(rast(file.path(output_dir, "e_horizon.tif")), main = "East Horizon")
-    plot(rast(file.path(output_dir, "w_horizon.tif")), main = "West Horizon")
+    par(mfrow = c(1, 2))
+    terra::plot(rast(file.path(output_dir, "e_horizon.tif")), main = "East Horizon")
+    terra::plot(rast(file.path(output_dir, "w_horizon.tif")), main = "West Horizon")
     if (writeplots) {
       dev.copy2pdf(file = file.path(output_dir, "plot_horizons.pdf"), width = 8, height = 6)
     }
@@ -251,8 +312,8 @@ wbox_subbasins_plot = function(subbasins, streams, output_dir, stream_threshold,
 
   colors <- rainbow(length(seq_along(unique(values(s)))))
   par(mfrow = c(1,1))
-  plot(s, main = paste0("Subbasins - stream threshold ",stream_threshold), col=colors)
-  plot(rast(streams), col="grey",add=T)
+  terra::plot(s, main = paste0("Subbasins - stream threshold ",stream_threshold), col=colors)
+  terra::plot(rast(streams), col="grey",add=T)
   tl = textlocTL(s)
   textlab = paste0("Based on stream threshold ",stream_threshold, "\n",nsub, " subbasins\n", "Min subbasin ", minsub, " km^2,",min(subsum)," patches\nMax subbasin ",maxsub," km^2, ",max(subsum)," patches")
   text(x = tl[1], y = tl[2], labels =textlab , col = "black", cex = 1, adj = c(0,1))
@@ -338,7 +399,7 @@ soil_texture_plot = function(soil_texture, plot_out, writeplots = T) {
   text_rep <- capture.output(print(soiltab))
   
   par(mfrow = c(1, 1))
-  plot(soil_texture, main = "Soil Textures")
+  terra::plot(soil_texture, main = "Soil Textures")
   tl = textlocTL(soil_texture)
   textlab = paste(text_rep, collapse = "\n")
   text(x = tl[1], y = tl[2], labels =textlab , col = "black", cex = 1, adj = c(0,1))
