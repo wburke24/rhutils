@@ -16,7 +16,6 @@ input_map_plotpdf <- function(
   maps <- lapply(map_paths, rast)
 
   # maplist = rbind(maplist,c("veg_parm_ID","NLCDv2.tif"))
-
   if (!is.null(template)) {
     maplist = RHESSysPreprocessing::template_read(template = template)[[5]]
     vegmaps = maplist[maplist[, 1] == "veg_parm_ID", 2]
@@ -36,21 +35,24 @@ input_map_plotpdf <- function(
 
   pdf(file = pdfname, width = pdfwidth, height = pdfheight)
   for (i in seq_along(map_names)) {
-    if (map_names[i] %in% vegmaps) {
-      nlcdcols = FedData::nlcd_colors()
-      vals <- unique(maps[[i]])
-      df <- as.data.frame(nlcdcols[nlcdcols$ID %in% unlist(vals), ])
-      names(df)[names(df) == "ID"] = "value"
+    # if (map_names[i] %in% vegmaps) {
+    #   nlcdcols = FedData::nlcd_colors()
+    #   vals <- unique(maps[[i]])
+    #   df <- as.data.frame(nlcdcols[nlcdcols$ID %in% unlist(vals), ])
+    #   names(df)[names(df) == "ID"] = "value"
 
-      plot(
-        maps[[i]],
-        main = map_names[i],
-        col = df[, c("value", "Color")],
-        type = "classes"
-      )
-    } else {
-      plot(maps[[i]], main = map_names[i])
-    }
+    #   terra::activeCat(
+    #     maps[[i]],
+    #     main = map_names[i],
+    #     col = df[, c("value", "Color")],
+    #     type = "classes"
+    #   )
+    # } else {
+    #   terra::plot(maps[[i]], main = map_names[i])
+    # }
+
+    terra::plot(maps[[i]], main = map_names[i])
+
   }
   suppressMessages(dev.off())
 
@@ -86,6 +88,7 @@ check_template = function(template) {
 
 
 # fill missing map data
+#' @export
 fill_missing_raster_data = function(target_raster, mask_map, iterations = 1, window = 3, fun = "mean") {
   if (!(fun == "mean" | fun == "mode")) {
     stop("fun can only be mean or mode")
