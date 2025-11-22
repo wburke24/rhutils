@@ -35,21 +35,6 @@ world_add_patch_vegparmIDcol = function(world) {
   world = merge.data.table(world, vegparm_by_patch, by = "patch_ID", all.x = TRUE, sort = F)
   return(as.data.frame(world))
 }
-# world_add_patch_vegparmIDcol = function(world) {
-#   # ---------- add patch and vegparm columns ----------
-#   world$pID = world$ID
-#   world$pID[!(world$level == "patch" | world$level == "canopy_strata")] = NA
-#   world$pID[!is.na(world$pID) & world$level == "canopy_strata"] = 
-#     substr(world$pID[!is.na(world$pID) & world$level == "canopy_strata"], 0, nchar(world$pID[!is.na(world$pID) & world$level == "canopy_strata"]) - 1 )
-  
-#   in_vegparm = world[world$vars == "veg_parm_ID", "values"]
-#   in_patches = unique(world[world$level == "patch", "ID"])
-#   in_veg_patches = data.table(in_vegparm, in_patches)
-#   names(in_veg_patches) = c("vegparm", "pID")
-#   world = merge.data.table(world, in_veg_patches, by = "pID", all.x = TRUE, sort = F)
-#   return(world)
-# }
-
 
 # add family ID and rule ID, will cover the strata and patches
 #' @export

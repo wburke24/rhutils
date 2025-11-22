@@ -1,8 +1,51 @@
-#' collect_output
+#' @title Collect RHESSys run outputs
+#' @description
+#' collect_output organizes the outputs of a RHESSys model run by creating a
+#' unique, timestamped directory (default prefix \"rh_out_\") under the
+#' specified output directory and moving CSV result files, any .params files,
+#' and a single run metadata file into that directory. If multiple metadata
+#' files matching the pattern are present, the most recent is selected.
 #'
-#' Collects the output files data and parameter files from a rhessys run and auto-generates a folder to place them in
+#' @param source_dir character(1). Directory where source files (params and the
+#'   output directory) live. Defaults to \"./\".
+#' @param basename character(1). Prefix for the created timestamped folder.
+#'   Defaults to \"rh_out_\".
+#' @param output_dir character(1). Relative path (inside source_dir) to the
+#'   directory that contains RHESSys outputs (CSV files and run metadata).
+#'   Defaults to \"output\". This directory must already exist.
+#' @param alert logical(1). If TRUE and CSV files are moved, calls
+#'   sim_alert() after moving CSVs. Defaults to TRUE.
+#'
+#' @return character(1) Path to the newly created timestamped directory
+#'   (invisibly) where files were moved. If there were no CSVs or params the
+#'   function still creates the timestamped folder and returns its path. The
+#'   function is called for its side-effects (creating directories and moving
+#'   files).
+#'
+#' @details
+#' - The function checks that output_dir exists; if it does not, the function
+#'   stops with an error.
+#' 
+#' - Parameter files (pattern \"*.params\") are moved into a \"params\" folder
+#'   inside the timestamped directory.
+#' 
+#' - Run metadata files are matched with pattern \"run_metadata_*.txt\"; if
+#'   multiple matches are found the file with the latest timestamp inferred
+#'   from its filename is moved.
+#' 
+#' - CSV files in the output_dir are moved into the created folder. If none
+#'   are found a message is printed and the created directory path is returned.
+#'
+#' @seealso sim_alert
+#' @examples
+#' \dontrun{
+#' # Collect outputs into output/rh_out_<timestamp> and do not trigger alert
+#' collect_output(source_dir = "~/projects/my_run", basename = "run_", output_dir = "output", alert = FALSE)
+#'
+#' # Use current working directory and default names
+#' collect_output()
+#' }
 #' @export
-
 collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", alert = T) {
   # check that output folder exists
   if (!dir.exists(output_dir)) {
