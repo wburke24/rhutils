@@ -97,7 +97,7 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
   cat("Basin is ",bsize," in map area units (probably square meters).\nAssuming square meters, in square km, basin is: ",bsize/(1000*1000),".\n")
   cat("With patches as unique grid cells, there would be: ",sum(b[!is.na(b)])," patches.\n")
 
-  maps_out = c("basin" = file.path(output_dir, "basin.tif"), "DEM" = file.path(tmp_dir, "dem_brch.tif"),"streams" = file.path(output_dir, "streams.tif"), "gauge_snap" = file.path(output_dir, "gauge_loc_snap.shp") )
+  maps_out = c("basin" = file.path(output_dir, "basin.tif"), "DEM" = file.path(output_dir, "dem.tif"),"streams" = file.path(output_dir, "streams.tif"), "gauge_snap" = file.path(output_dir, "gauge_loc_snap.shp") )
   return(maps_out)
 }
 
@@ -294,14 +294,18 @@ wbox_subbasins_vis = function(subbasins, streams, min_subbasin_size = 20) {
 
 
 #' @export
+textlocTL = function(srcmap) {
+  pct = 0.95
+  exts = terra::ext(srcmap)
+  x = exts[2] - ((exts[2] - exts[1])*pct)
+  y = exts[3] + ((exts[4] - exts[3])*pct)
+  return(c(x,y))
+}
+
+
+#' @export
 wbox_subbasins_plot = function(subbasins, streams, output_dir, stream_threshold, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
-  textlocTL = function(srcmap) {
-    pct = 0.95
-    exts = ext(srcmap)
-    x = exts[2] - ((exts[2] - exts[1])*pct)
-    y = exts[3] + ((exts[4] - exts[3])*pct)
-    return(c(x,y))
-  }
+
 
   s = rast(subbasins)
   nsub = length(summary(as.factor(values(s, na.rm=T))))

@@ -1,85 +1,77 @@
-# soil_spin
+# Patch family soil nutrient spinup workflow
+# Uses a worldfile to generate single patch FAMILY worlds based on each RULE, then runs each world
+# and reincorporates the resulting soil nutrient values into the original worldfile
+# Last updated: 11/21/2025
+
 library(RHESSysIOinR)
 library(rhutils)
 library(data.table)
 library(stringr)
-# source("../R/fun_spinup.R")
+source("~/Repos/rhutils/workflow/output_aliases.R")
 
-# Uses a worldfile to generate single patch worlds based on each veg parameter, then runs each world and reincorporates the
-# resulting soil nutrient values into the original worldfile
 
 # ---------- Input world ----------
 # world_path = "worldfiles/RedRockMSR30m_tree2shrubnobare.world"
 # flow_path = "flowtables/RedRockMSR30m_tree2shrubnobare.flow"
-world_path = "worldfiles/RedRockMSR30m_treegrass_LPC.world"
-flow_path = "flowtables/RedRockMSR30m_treegrass_LPC.flow"
-
+# world_path = "worldfiles/RedRockMSR30m_treegrass_LPC.world"
+# flow_path = "flowtables/RedRockMSR30m_treegrass_LPC.flow"
+world_path = "worldfiles/RedRockMSR30m_treegrass_LPC_v2.world"
+flow_path = "flowtables/RedRockMSR30m_treegrass_LPC_v2.flow"
 dest = "soil_spin"
-if (!dir.exists(file.path("worldfiles",dest))) {
-  dir.create(file.path("worldfiles",dest))
-}
-if (!dir.exists(file.path("flowtables",dest))) {
-  dir.create(file.path("flowtables",dest))
-}
 
-# read world
+# =================================================================================================================
+# ======================================== START WORLDFILE+FLOWTABLE SETUP ========================================
+# =================================================================================================================
+if (!dir.exists(file.path("worldfiles",dest))) {dir.create(file.path("worldfiles",dest))}
+if (!dir.exists(file.path("flowtables",dest))) {dir.create(file.path("flowtables",dest))}
+# ==================== read world + add vars ====================
 world = as.data.table(read_world(world_path, hill_col = T, zone_col = T, patch_col = T))
-# add cols
-world = world_add_level_i(world)
+# world = world_add_level_i(world)
 world = world_add_patch_vegparmIDcol(world)
 world = world_add_familyID_RuleID(world)
+# ==================== Get rules + set output paths ====================
+rules = unique(world$rule_ID[!is.na(world$rule_ID)])
+output_world_paths = file.path("worldfiles",dest, paste0(gsub(".world","", basename(world_path)),"_ruleID", rules,".world"))
+output_flow_paths = file.path("flowtables",dest, paste0(gsub(".world","", basename(world_path)),"_ruleID", rules,".flow"))  
+cat("Making", length(rules), "new worlds and flowtables based on rules:\n")
+# ==================== Select and subset new worlds ====================
+select_familyID_per_vegID_MSR = function(x, world) {
+  cat("Selecting patch FAMILY ID for rule_ID:", x, "\n")
+  cat("\tUsing median elevation and cover fraction to select patch\n")
+  cat("\tThis is for MSR (not standard) worldfiles\n")
+  # USE: patch_selected_uniqueIDs = sapply(veg, select_mean_vegID_patch, world = world)
+  subset = world[world$rule_ID == x & !is.na(world$rule_ID), ]
 
-# --------- STANDARD VERSION -------------- make worlds from veg
-standard = F
-if (standard) {
-  veg = unique(world$vegparm[!is.na(world$vegparm)])
-  output_world_paths = file.path("worldfiles",dest, paste0(gsub(".world","", basename(world_path)),"_vegID", veg,".world")) 
-  output_flow_paths = file.path("flowtables",dest, paste0(gsub(".world","", basename(world_path)),"_vegID", veg,".flow")) 
-  # ---------- Make 1 Patch Worlds ----------
-  # selecting patches based on single veg parm IDs, since world is 1 strata
-  p1_veg = rbindlist(lapply(veg, function(x) world[min(which(world$vegparm == x)), ]))
-  # make new worlds
-  newworlds = lapply(p1_veg$unique_ID, FUN = extract_world, world = world)
+  elev = as.numeric(subset[subset$vars == "z", "values"])
+  cover = as.numeric(subset[subset$vars == "cover_fraction", "values"])
+  med_elev = median(elev)
+  med_cover = median(cover)
+  cat("\tMedian Elevation:", med_elev,
+      "\n\tMedian Cover Fraction:", med_cover, "\n")
+  # find closest to median
+  dist = sqrt((elev - med_elev)^2 + (cover - med_cover)^2)
+  return(subset$family_ID[which.min(dist)])
 }
-
-# --------------- MSR Version -----------------
-msr = T
-if (msr) {
-  rules = unique(world$rule_ID[!is.na(world$rule_ID)])
-  output_world_paths = file.path("worldfiles",dest, paste0(gsub(".world","", basename(world_path)),"_ruleID", rules,".world"))
-  output_flow_paths = file.path("flowtables",dest, paste0(gsub(".world","", basename(world_path)),"_ruleID", rules,".flow"))  
-  # select patch families
-  pfams = unlist(lapply(rules, select_pfam, world))
-  # make new worlds
-  newworlds = lapply(pfams, FUN = pfam_extract_world, world = world)
-
-  # cover fraction VARIES - set to mean for each ruleID
-  world_covers = world[vars == "cover_fraction"]
-  world_covers$values = as.numeric(world_covers$values)
-  cover_avg = world_covers[,lapply(.SD,mean), by = .(rule_ID), .SDcols = "values"]
-  cover_avg$values = round(cover_avg$values,2)
-  
-  newworlds = lapply(newworlds, function(x) {
-    x[vars == "cover_fraction", values := cover_avg$values[as.numeric(unique(x$rule_ID[!is.na(x$rule_ID)]))]]
-    return(x)
-  })
-
-}
-
+selected_family_IDs = sapply(rules, select_familyID_per_vegID_MSR, world = world)
+# ==================== Create and write new worlds ====================
+newworlds = lapply(selected_family_IDs, FUN = pfam_extract_world, world = world)
 mapply(write_world,newworlds,output_world_paths)
-
-# ---------- Make 1 Patch Flow Tables ----------
-# newflows = lapply(newworlds, make_1pflow)
+# ==================== Make matching flow tables ====================
 newflows = lapply(newworlds, make_1pfamflow)
 mapply(writeLines, newflows, output_flow_paths)
+# ===============================================================================================================
+# ======================================== END WORLDFILE+FLOWTABLE SETUP ========================================
+# ===============================================================================================================
 
 # -------------------- RUN FOR SOIL NUTRIENT SPINUP --------------------
-namenoext = gsub(".world","",basename(world_path))
-output_world_paths = list.files(file.path("worldfiles/",dest),pattern = paste0(namenoext,".*.world$"),full.names = T)
-output_flow_paths = list.files(file.path("flowtables/",dest),pattern = paste0(namenoext,".*.flow$"),full.names = T)
-IDs = str_extract(output_world_paths, "(?<=ruleID)\\d+")
+# namenoext = gsub(".world","",basename(world_path))
+# output_world_paths = list.files(file.path("worldfiles/",dest),pattern = paste0(namenoext,".*.world$"),full.names = T)
+# output_flow_paths = list.files(file.path("flowtables/",dest),pattern = paste0(namenoext,".*.flow$"),full.names = T)
+# IDs = str_extract(output_world_paths, "(?<=ruleID)\\d+")
 
 # IDs = c("1", "2", "3", "4", "5", "6", "7", "8")
+IDs = rules
+
 
 run_cmds = list()
 
@@ -156,8 +148,6 @@ for (i in seq_along(IDs)) {
   input_tec_data = IOin_tec_std(start = "1979 10 1 1", end = dates[2], output_state = T)
   
   # -------------------- Output filter --------------------
-  source("R/output_aliases.R")
-
   outvars = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "patch.lai", "patch.rootzone.depth", "patch.rz_storage","patch.unsat_storage", "stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "patch.evaporation","patch.evaporation_surf","patch.transpiration_unsat_zone","patch.transpiration_sat_zone","stratum.epv.height")
   
   outfilter = build_output_filter(
@@ -183,11 +173,11 @@ for (i in seq_along(IDs)) {
   
 }
 
-# -------------------- MANUAL PARALLEL RUNS --------------------
+# -------------------- SAVE RUN CMDS WITH RUN ID --------------------
 runid = GetRunID(increment = T)
-# output_filter = AddRunIDtoOutputFilters(output_filter,runid)
 save(run_cmds, file = paste0("robj/", name,"_RunID",runid, ".RData"))
 
+# -------------------- PARALLEL RUNS --------------------
 parallel_runs(run_cmds = run_cmds)
 
 out_dir = collect_output(basename = paste0("pfam_soilspin_RunID", GetRunID(),"_"))

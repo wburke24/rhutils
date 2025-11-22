@@ -58,7 +58,8 @@ world_add_familyID_RuleID = function(world) {
     if (is.null(world$patch_ID)) {
       stop("add patch ID first")
     }
-
+    world$sort_index = seq_len(nrow(world))
+    
     pfams = world[world$vars == "family_ID", c("patch_ID","values")]
     names(pfams)[2] = "family_ID"
     world = merge(world, pfams, by = "patch_ID", sort = F, all = T)
@@ -71,6 +72,10 @@ world_add_familyID_RuleID = function(world) {
     } else {
       cat("No asp_rule found in worldfile, omitting.")
     }
+
+    world = world[order(world$sort_index), ]
+    world$sort_index = NULL
+    row.names(world) = NULL
 
     return(world)
 
@@ -147,9 +152,16 @@ pfam_extract_world = function(familyID, world) {
   # also assume add check, for hillslope and zone cols
   # only need parent levels, and only need to correct those
   cat("Assumes world has zone, hill, patch family, and patch ID cols, and using datatable\n")
+  require(data.table)
+  world = as.data.table(world)
 
   # this is patches and strata that match the patch family
   target = world[family_ID == familyID,]
+
+  if (nrow(target) == 0) {
+    stop("Something went wrong: no patches found for familyID:", familyID)
+  }
+
   # use unique IDs for simplicity
   target_uniqID = unique(target$unique_ID)
   
@@ -189,10 +201,10 @@ pfam_extract_world = function(familyID, world) {
 
 #' @export
 select_pfam = function(rule, world) {
-  tmp = as.numeric(as.data.frame(world[world$rule_ID == rule & vars == "z","values"])$values) 
+  tmp = as.numeric(as.data.frame(world[world$rule_ID == rule & world$vars == "z","values"])$values) 
   medzi = which.min(abs(tmp - median(tmp)))
   # get patch fam of first patch w this elevation
-  famid = world[world$rule_ID == rule & vars == "z", family_ID][medzi]
+  famid = world[world$rule_ID == rule & world$vars == "z", "family_ID"][medzi]
   return(famid)
 }
 
@@ -232,4 +244,128 @@ make_1pfamflow = function(world) {
                     paste0(patch_out, collapse = "\n"))
  
   return(flow_out)
+}
+
+
+#' @export
+# selecting patches based on veg parm IDs and median cover + elevation, using unique ID to extract below
+select_mean_vegID_patch = function(x, world) {
+  cat("Selecting patch for veg_parm_ID:", x, "\n")
+  cat("Using median elevation and cover fraction to select patch\n")
+  cat("This is for STANDARD (non MSR) worldfiles\n")
+  # USE: patch_selected_uniqueIDs = sapply(veg, select_mean_vegID_patch, world = world)
+  subset = world[world$veg_parm_ID == x & !is.na(world$veg_parm_ID), ]
+  elev = as.numeric(subset[subset$vars == "z", "values"])
+  cover = as.numeric(subset[subset$vars == "cover_fraction", "values"])
+  med_elev = median(elev)
+  med_cover = median(cover)
+  # find closest to median
+  dist = sqrt((elev - med_elev)^2 + (cover - med_cover)^2)
+  return(subset$unique_ID[which.min(dist)])
+}
+
+#' @export
+# selecting patches based on rule IDs and median cover + elevation, using family ID to extract below
+select_familyID_per_vegID_MSR = function(x, world) {
+  cat("Selecting patch FAMILY ID for rule_ID:", x, "\n")
+  cat("\tUsing median elevation and cover fraction to select patch\n")
+  cat("\tThis is for MSR (not standard) worldfiles\n")
+  # USE: patch_selected_uniqueIDs = sapply(veg, select_mean_vegID_patch, world = world)
+  subset = world[world$rule_ID == x & !is.na(world$rule_ID), ]
+
+  elev = as.numeric(subset[subset$vars == "z", "values"])
+  cover = as.numeric(subset[subset$vars == "cover_fraction", "values"])
+  med_elev = median(elev)
+  med_cover = median(cover)
+  cat("\tMedian Elevation:", med_elev,
+      "\n\tMedian Cover Fraction:", med_cover, "\n")
+  # find closest to median
+  dist = sqrt((elev - med_elev)^2 + (cover - med_cover)^2)
+  return(subset$family_ID[which.min(dist)])
+}
+
+#' @export
+
+new_world_from_spun_worlds = function(spun_world_paths, original_world_path, ID = "rule_ID") {
+  require(data.table)
+  
+  # ==================== Check Inputs ====================
+  # check valid ID
+  if (!ID %in% c("rule_ID","veg_parm_ID")) {
+    stop("ID must be 'rule_ID' or 'veg_parm_ID'")
+  }
+  # check spun worlds exist
+  if (length(spun_world_paths) == 0) {
+    stop("No spun world paths provided")
+    if (!all(file.exists(spun_world_paths))) {
+      stop("Not all spun world paths exist")
+    }
+  }
+  if (!file.exists(original_world_path)) {
+    stop("Original world path does not exist")
+  }
+
+  cat("Combining ", length(spun_world_paths), "spun worlds to create new world with spun soil nutrients\n")
+
+  # ==================== read spun and original worlds ====================
+  worlds_spun = lapply(spun_world_paths, FUN = function(X){as.data.table(read_world(X, patch_col = T))})
+  worlds_spun = lapply(worlds_spun, world_add_patch_vegparmIDcol)
+  world_dest = as.data.table(read_world(original_world_path, patch_col = T))
+  world_dest = world_add_patch_vegparmIDcol(world_dest)
+  
+  worlds_spun = lapply(worlds_spun, as.data.table )
+  world_dest = as.data.table(world_dest)
+
+  if (ID == "rule_ID") {
+    worlds_spun = lapply(worlds_spun, world_add_familyID_RuleID)
+    world_dest = world_add_familyID_RuleID(world_dest)
+    # if no rule_ID in spun worlds, get from dest via family ID
+    if (all(sapply(worlds_spun, function(X) all(is.na(X$rule_ID))))) {
+      worlds_spun = lapply(worlds_spun, function(X) {
+        X = merge(X, unique(world_dest[,.(family_ID, rule_ID)]), by = "family_ID", all.x = T)
+        return(X)
+      })
+    }
+  }
+  
+  worlds_spun = lapply(worlds_spun, as.data.table )
+  world_dest = as.data.table(world_dest)
+
+  # ==================== check IDs in dest match spun ====================
+  if (ID == "rule_ID") {
+    ruleIDs = unique(world_dest$rule_ID[!is.na(world_dest$rule_ID)])
+    ruleIDs_spun = sapply(worlds_spun, function(X) unique(X$rule_ID[!is.na(X$rule_ID)]))
+    if (!all(ruleIDs %in% ruleIDs_spun)) {
+      stop("Not all rule_IDs in destination world are present in spun worlds")
+    }
+  } else {
+    vegparm = unique(world_dest$vegparm[!is.na(world_dest$vegparm)])
+    vegparm_spun = sapply(worlds_spun, function(X) unique(X$vegparm[!is.na(X$vegparm)]))
+    if (!all(vegparm %in% vegparm_spun)) {
+      stop("Not all veg_parm_IDs in destination world are present in spun worlds")
+    }
+  }
+
+  # vars to replace - ***come back to this***
+  soil_vars = c("soil_cs.soil1c",  "soil_cs.soil2c", "soil_cs.soil3c", 
+              "soil_cs.soil4c", "soil_ns.sminn", "soil_ns.nitrate"
+              # "rootzone.depth", "snow_stored", "rain_stored", 
+              # "epv.wstress_days", "epv.max_fparabs", "epv.min_vwc", 
+              # "gw.storage", "gw.NO3"
+              )
+  # ==================== replace values in dest with spun ====================
+  if (ID == "rule_ID") {
+    l = rbindlist(worlds_spun)
+    l = l[vars %in% c(soil_vars) & !is.na(rule_ID), .(rule_ID, veg_parm_ID, vars, values)]
+    world_new = merge(world_dest, l, by = c("rule_ID", "veg_parm_ID", "vars"), all.x = T, suffixes = c("", ".spun"), sort = F)
+  } else {
+    l = rbindlist(worlds_spun)
+    l = l[vars %in% c(soil_vars) & !is.na(vegparm), .(vegparm, vars, values)]
+    world_new = merge(world_dest, l, by = c("vegparm", "vars"), all.x = T, suffixes = c("", ".spun"), sort = F)
+  }
+
+  world_new[!is.na(values.spun), values := values.spun]
+  world_new[, values.spun := NULL]
+
+  return(world_new)
 }
