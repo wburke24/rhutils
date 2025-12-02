@@ -246,3 +246,13 @@ ExtractRunID = function(out_dir) {
 #
 #   return(stripped_strings)
 # }
+
+#' @export
+find_open_most_recent <- function(dir, pattern) {
+  files = list.files(path = dir, pattern = pattern, full.names = T)
+  file_info = file.info(files)
+  most_recent_file = rownames(file_info[which.max(file_info$ctime), ])
+  cat("Opening most recent file:", most_recent_file, "\n")
+  browseURL(most_recent_file)
+  return(most_recent_file)
+}

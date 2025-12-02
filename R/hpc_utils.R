@@ -5,8 +5,13 @@
 rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
   #---- for hpc and copying files
   rhout_str = unlist(rhout)
-  rhout_str = gsub("wsl ", "",rhout_str)
-  # rhout_str = gsub("../bin/rhessys7.4", "/RHESSys/rhessys7.5",rhout_str)
+  # remove leading 'wsl bash -lc ' if present
+  rhout_str = gsub("^wsl bash -lc ","",rhout_str)
+  # remove leading 'wsl ' if present
+  rhout_str = gsub("^wsl ", "",rhout_str)
+  # remove escaped quotes
+  rhout_str = gsub('\\"',"",rhout_str)
+  # replace rhessys binary path if desired
   if (!is.null(rh_bin_replace)) {
     rhout_str = gsub("^.*rhessys\\d{1}\\.\\d{1} ", paste0(trimws(rh_bin_replace)," "),rhout_str)
     # rhout_str = gsub("../bin/rhessys\\d{1}.\\d{1}", "/RHESSys/rhessys7.5",rhout_str)

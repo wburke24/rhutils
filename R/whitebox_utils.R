@@ -187,7 +187,7 @@ wbox_subbasins = function(dem_brch, streams, output_dir, stream_threshold, tmp_d
 # ================================================================================
 # slope, aspect, horizon
 #' @export
-wbox_slope_aspect_horizons = function(dem_brch, plots = T, writeplots = T, overwrite = T) {
+wbox_slope_aspect_horizons = function(dem_brch, output_dir, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
 
   # ==================== Slope and aspect ====================
   wbt_slope(dem = dem_brch, output = file.path(output_dir, "slope.tif"), units = 'degrees')
@@ -219,6 +219,11 @@ wbox_slope_aspect_horizons = function(dem_brch, plots = T, writeplots = T, overw
     par(mfrow = c(1, 2))
     terra::plot(rast(file.path(output_dir, "e_horizon.tif")), main = "East Horizon")
     terra::plot(rast(file.path(output_dir, "w_horizon.tif")), main = "West Horizon")
+
+    par(mfrow = c(1, 2))
+    terra::plot(asin(rast(file.path(output_dir, "e_horizon.tif")))  * 180/pi, main = "East Horizon in Degrees")
+    terra::plot(asin(rast(file.path(output_dir, "w_horizon.tif"))) * 180/pi, main = "West Horizon in Degrees")
+
     if (writeplots) {
       dev.copy2pdf(file = file.path(output_dir, "plot_horizons.pdf"), width = 8, height = 6)
     }
