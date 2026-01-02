@@ -154,3 +154,67 @@ world_add_var = function(world, var, value, loc_var) {
   #   offset <- offset + 1
   # }
 }
+
+# ================================================================================
+#' Extract a single hillslope from a worldfile table
+#'
+#' Given a full worldfile table (as returned by \code{read_world}), extract
+#' all rows corresponding to a single hillslope, identified by its
+#' \code{hillslope_ID}. The function includes the world and basin header rows
+#' above the selected hillslope and all rows up to (but not including) the
+#' next hillslope in the table.
+#'
+#' @param world A \code{data.frame} or \code{data.table} representing the
+#'   parsed worldfile, typically produced by \code{read_world}. It must
+#'   contain at least the columns \code{vars}, \code{values}, and
+#'   \code{level}.
+#' @param hillslope_id Integer ID of the hillslope to extract; this is
+#'   matched against rows where \code{vars == "hillslope_ID"} and
+#'   \code{as.numeric(values) == hillslope_id}.
+#'
+#' @return A subset of \code{world} containing the rows for the specified
+#'   hillslope, including relevant world and basin rows. An error is thrown
+#'   if the hillslope ID is not found or if multiple matching hillslopes are
+#'   detected.
+#'
+#' @examples
+#' \dontrun{
+#' world <- read_world("my_worldfile.world")
+#' hill1 <- extract_hillslope_from_world(world, hillslope_id = 1)
+#' }
+#'
+#' @export
+extract_hillslope_from_world = function(world, hillslope_id) {
+  # Filter to selected hillslope
+  hillslope_rows = which(world$vars == "hillslope_ID" & as.numeric(world$values) == hillslope_id)
+  if(length(hillslope_rows) == 0) {
+    stop(paste("Hillslope ID", hillslope_id, "not found in worldfile"))
+  } else if(length(hillslope_rows) > 1) {
+    stop(paste("Multiple entries found for hillslope ID", hillslope_id))
+  }
+
+  # from hill id, select to next hillslope_ID
+  start_row = hillslope_rows
+  end_row = which(world$vars == "hillslope_ID" & as.numeric(world$values) != hillslope_id & seq_along(world$vars) > hillslope_rows)[1] - 1
+  if(is.na(end_row)) {
+    end_row = nrow(world)
+  }
+  filtered_world = world[start_row:end_row, ]
+
+  # add world and basin to top
+  basin_rows = which(world$level == "basin")
+  world_rows = which(world$level == "world")
+  filtered_world = rbind(world[world_rows, ], world[basin_rows, ], filtered_world)
+
+  # set num hillslopes to 1
+  filtered_world[filtered_world$level == "basin" & filtered_world$vars == "num_hillslopes", "values"] = 1
+  # set basin x y z to hillslope x y z
+  hill_x = filtered_world[filtered_world$level == "hillslope" & filtered_world$vars == "x", "values"]
+  hill_y = filtered_world[filtered_world$level == "hillslope" & filtered_world$vars == "y", "values"]
+  hill_z = filtered_world[filtered_world$level == "hillslope" & filtered_world$vars == "z", "values"]
+  filtered_world[filtered_world$level == "basin" & filtered_world$vars == "x", "values"] = hill_x
+  filtered_world[filtered_world$level == "basin" & filtered_world$vars == "y", "values"] = hill_y
+  filtered_world[filtered_world$level == "basin" & filtered_world$vars == "z", "values"] = hill_z
+
+  return(filtered_world)
+}

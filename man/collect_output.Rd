@@ -8,6 +8,7 @@ collect_output(
   source_dir = "./",
   basename = "rh_out_",
   output_dir = "output",
+  out_file_basename = NULL,
   alert = T
 )
 }
@@ -21,6 +22,10 @@ Defaults to \"rh_out_\".}
 \item{output_dir}{character(1). Relative path (inside source_dir) to the
 directory that contains RHESSys outputs (CSV files and run metadata).
 Defaults to \"output\". This directory must already exist.}
+
+\item{out_file_basename}{character(1) or NULL. If provided, only CSV files
+that start with this basename will be moved. If NULL (default), all CSV
+files in output_dir are moved.}
 
 \item{alert}{logical(1). If TRUE and CSV files are moved, calls
 sim_alert() after moving CSVs. Defaults to TRUE.}

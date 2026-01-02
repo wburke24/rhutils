@@ -152,14 +152,32 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
     return(rhout_str)
 
   } else if (transfer_method == "rsync") {
-    # copy_cmd1 = paste0("rsync -azPR ", paste0(c(filelist$all_files,rhout_str),collapse = " ") , " ", usr,dest)
-    # dput(copy_cmd1)
-    # writeLines(text = c(filelist$all_files,rhout_str),con = "scripts/filelist.txt")
-    # copy_cmd2 = paste0("rsync -avvvPR --files-from=scripts/filelist.txt ./ ", usr,dest)
-    # dput(copy_cmd2)
-    cat("This doesn't work right now.")
-  }
+    # Ensure remote dirs exist (create under dest)
+    remote_dirs = paste(unique(dirname(filelist$all_files)), collapse = " ")
+    dircmd = paste0("wsl ssh -i ", rsa_loc, " ", gsub(":","",usr), " \"cd ", dest, " && mkdir -p ", remote_dirs, "\"")
+    cat("\nMaking dirs: ", dircmd, "\n\n")
+    system(dircmd)
 
+    # Build list of files to transfer (unique, include generated run script)
+    files_to_copy = unique(c(filelist$all_files, rhout_str))
+
+    # Quote file paths to handle spaces/special chars
+    files_quoted = paste(shQuote(files_to_copy), collapse = " ")
+
+    # Use rsync with -R to preserve relative paths, -a for archive, -z for compression,
+    # and specify ssh with the provided identity file.
+    rsync_cmd = paste0(
+      "wsl rsync -azR -e \"ssh -i ", rsa_loc, "\" ",
+      files_quoted, " ",
+      usr, dest
+    )
+
+    cat("\nRunning rsync command...\n\n")
+    system(rsync_cmd)
+
+    cat("Rsync file transfer completed.\n")
+    return(rhout_str)
+  }
 }
 
 #' @export

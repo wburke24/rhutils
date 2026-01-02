@@ -13,6 +13,9 @@
 #' @param output_dir character(1). Relative path (inside source_dir) to the
 #'   directory that contains RHESSys outputs (CSV files and run metadata).
 #'   Defaults to \"output\". This directory must already exist.
+#' @param out_file_basename character(1) or NULL. If provided, only CSV files
+#'   that start with this basename will be moved. If NULL (default), all CSV
+#'   files in output_dir are moved.
 #' @param alert logical(1). If TRUE and CSV files are moved, calls
 #'   sim_alert() after moving CSVs. Defaults to TRUE.
 #'
@@ -46,13 +49,19 @@
 #' collect_output()
 #' }
 #' @export
-collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", alert = T) {
+collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", out_file_basename = NULL, alert = T) {
   # check that output folder exists
   if (!dir.exists(output_dir)) {
     stop("Destination path '",output_dir,"' does not exist.")
   }
   # find csv and param files
-  csv_files = list.files(path = output_dir, pattern = "*\\.csv")
+  # if using out_file_basename find only those csvs
+  if (!is.null(out_file_basename)) {
+    csv_files = list.files(path = output_dir, pattern = paste0("^",out_file_basename,".*\\.csv$"))
+  } else {
+    csv_files = list.files(path = output_dir, pattern = "*\\.csv")
+  }
+
   params_files = list.files(path = source_dir, pattern = "*\\.params")
   # check if theres at least either csv or params
   if (length(csv_files) == 0 & length(params_files) == 0) {
