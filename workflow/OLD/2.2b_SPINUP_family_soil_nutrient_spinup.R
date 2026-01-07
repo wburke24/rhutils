@@ -321,37 +321,7 @@ new_world = new_world_from_spun_worlds(spun_world_paths = spun_world_paths, orig
 write_world(new_world, gsub(".world", "_spun_nutrients.world", world_path))
 
 
-oldver = F
-if (oldver) {
-  # old version
-worlds_spun = lapply(world_path_spun, FUN = function(X){as.data.table(read_world(X, patch_col = T))})
-worlds_spun = lapply(worlds_spun, world_add_familyID_RuleID)
 
-soil_vars = c("soil_cs.soil1c",  "soil_cs.soil2c", "soil_cs.soil3c", 
-              "soil_cs.soil4c", "soil_ns.sminn", "soil_ns.nitrate"
-              # "litter.rain_stored", "litter_cs.litr1c", "litter_ns.litr1n", 
-              # "litter_cs.litr2c", "litter_cs.litr3c", "litter_cs.litr4c", 
-              # "rootzone.depth", "snow_stored", "rain_stored", 
-              # "epv.wstress_days", "epv.max_fparabs", "epv.min_vwc", 
-              # "gw.storage", "gw.NO3"
-              )
-world_dest = as.data.table(read_world(world_path, patch_col = T))
-world_dest = world_add_familyID_RuleID(world_dest)
-library(stringr)
-ruleIDs = as.numeric(str_remove(str_extract(world_path_spun,"ruleID\\d+"),"ruleID"))
-# vegids = as.numeric(gsub("vegID","", regmatches(world_path_spun, regexpr("vegID\\d+", world_path_spun))))
-
-# ew bad
-for (r in ruleIDs) {
-  for (vid in vegparm) {
-      for (v in soil_vars) {
-    world_dest[vars %in% soil_vars & rule_ID == r & vars == v, "values"] = 
-      worlds_spun[[which(ruleIDs == r)]][vars %in% soil_vars & rule_ID == r & vars == v, "values"]
-  }
-  }
-
-}
-} 
 
 
 
