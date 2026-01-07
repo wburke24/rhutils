@@ -45,8 +45,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   redef_strata = rep.int(TRUE, length(world$vars))
   redef_veg_strata = rep.int(TRUE, length(world$vars))
   redef_patch = rep.int(TRUE, length(world$vars))
-
-
+  
   # ---------- Thinning redefine ----------
   redef_index = NULL
   if (!is.null(std_thin)) {
@@ -71,7 +70,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     }
     redef_values = as.character(rep.int(std_thin, length(redef_index)))
     if (!is.null(redef_index)) {
-      world$values[replace_index] = redef_values
+      world$values[redef_index] = redef_values
     }
   }
 

@@ -14,6 +14,7 @@ library(rhutils)
 library(leaflet)
 library(leafem)
 library(sf)
+library(soiltexture)
 
 wbt_version()
 wbt_init()
