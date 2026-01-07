@@ -477,7 +477,7 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
     out$SRC <- src
 
     # ex
-    library(boot)
+    # boot functions accessed via ::
     n <- 100
     X <- data.frame(X1 = runif(n, 0.5, 1.5),
                     X2 = runif(n, 1.5, 4.5),
@@ -548,27 +548,26 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
 # output the pars sens
 #' @export
 pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_tables.pdf", pdfwidth = 14, pdfheight = 14) {
-  library(grid)
-  library(gridExtra)
+  # grid and gridExtra functions accessed via ::
 
   pdf(output_path, width = pdfwidth, height = pdfheight)
 
-  for (i in seq_along(sensout)) {
-    df <- sensout[[i]]
+  for (i in seq_along(pars_sens_out)) {
+    df <- pars_sens_out[[i]]
 
-    tbl <- tableGrob(df, rows = NULL)  # no row names
+    tbl <- gridExtra::tableGrob(df, rows = NULL)  # no row names
 
     # Bold column headers
-    header_gpar <- gpar(fontface = "bold", fill = "#D3D3D3")
+    header_gpar <- grid::gpar(fontface = "bold", fill = "#D3D3D3")
     tbl$grobs[tbl$layout$name == "colhead"] <- lapply(
       tbl$grobs[tbl$layout$name == "colhead"],
-      function(g) editGrob(g, gp = header_gpar)
+      function(g) grid::editGrob(g, gp = header_gpar)
     )
 
-    title <- textGrob(names(sensout)[i], gp = gpar(fontsize = 14, fontface = "bold"))
+    title <- grid::textGrob(names(pars_sens_out)[i], gp = grid::gpar(fontsize = 14, fontface = "bold"))
 
     # grid.newpage()
-    grid.arrange(title, tbl, ncol = 1, heights = c(0.05, 1))
+    gridExtra::grid.arrange(title, tbl, ncol = 1, heights = c(0.05, 1))
   }
 
   dev.off()

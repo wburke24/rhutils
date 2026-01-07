@@ -30,13 +30,16 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
   }
 
   # DEF PARS  - MAKE SURE ALL ARE NUMERIC, CAN'T HANDLE CHARACTER INPUTS FOR SOME REASON
+  nacol <- rep(FALSE, ncol(defpar_df_t))
   if (any(apply(defpar_df_t,2, is.character))) {
     cat("Converting parameter table from character to numeric.\n")
     dfnew = as.data.frame(apply(defpar_df_t,2, function(x) suppressWarnings(as.numeric(x)), simplify = F))
     nacol = apply(dfnew, 2, function(x) any(is.na(x)) )
     if (any(nacol)) {
-      cat("Some or all of parameter table contained character values not convertable to numeric, eg allocation_flag.\n
-      Omitting for sensitivity analysis.\n")
+      cat(
+        "Some or all of parameter table contained character values not convertible to numeric, e.g., allocation_flag.\n",
+        "Omitting for sensitivity analysis.\n"
+      )
       # for here, replace with original data, later remove
       dfnew[,which(nacol)] = defpar_df_t[,which(nacol)] 
     }

@@ -1,5 +1,28 @@
 # Calibration utilities
 # except for cal_eval
+# ================================================================================
+#' @export
+pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_tables.pdf", pdfwidth = 14, pdfheight = 14) {
+  # Use fully qualified calls to avoid search path dependencies
+  pdf(output_path, width = pdfwidth, height = pdfheight)
+  for (i in seq_along(pars_sens_out)) {
+  df <- pars_sens_out[[i]]
+  tbl <- gridExtra::tableGrob(df, rows = NULL)  # no row names
+  # Bold column headers
+    header_gpar <- grid::gpar(fontface = "bold", fill = "#D3D3D3")
+    tbl$grobs[tbl$layout$name == "colhead"] <- lapply(
+      tbl$grobs[tbl$layout$name == "colhead"],
+      function(g) grid::editGrob(g, gp = header_gpar)
+    )
+  title <- grid::textGrob(names(pars_sens_out)[i], gp = grid::gpar(fontsize = 14, fontface = "bold"))
+  # grid.newpage()
+  gridExtra::grid.arrange(title, tbl, ncol = 1, heights = c(0.05, 1))
+  }
+  dev.off()
+  cat("Wrote output tables to pdf:",output_path,"\n")
+}
+# Calibration utilities
+# except for cal_eval
 
 # ================================================================================
 #' @export
@@ -7,7 +30,7 @@ def_changes_by_evaldf = function(defpar_df, eval, stat = "NSE") {
   # assume that eval is already ordered by calibration run id
 
   defpar_parfile = defpar_df[,c("Variable","Def_file")]
-  defpar_df_pars = defpar_df[, names(defpar_df) != c("Variable","Def_file")]
+  defpar_df_pars = defpar_df[, !names(defpar_df) %in% c("Variable","Def_file")]
   # double check they're in order, jk they always should be
   # names(defpar_df_pars) = names(defpar_df_pars)[order(as.numeric(gsub("Run_","",names(defpar_df_pars))))]
 

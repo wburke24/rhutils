@@ -137,7 +137,7 @@ pfam_extract_world = function(familyID, world) {
   # also assume add check, for hillslope and zone cols
   # only need parent levels, and only need to correct those
   cat("Assumes world has zone, hill, patch family, and patch ID cols, and using datatable\n")
-  require(data.table)
+  # data.table functions accessed via ::
   world = as.data.table(world)
 
   # this is patches and strata that match the patch family
@@ -272,7 +272,7 @@ select_familyID_per_vegID_MSR = function(x, world) {
 #' @export
 
 new_world_from_spun_worlds = function(spun_world_paths, original_world_path, ID = "rule_ID") {
-  require(data.table)
+  # data.table functions accessed via ::
   
   # ==================== Check Inputs ====================
   # check valid ID

@@ -51,15 +51,15 @@
 #' @export
 collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = "output", out_file_basename = NULL, alert = T) {
   # check that output folder exists
-  if (!dir.exists(output_dir)) {
-    stop("Destination path '",output_dir,"' does not exist.")
+  if (!dir.exists(file.path(source_dir, output_dir))) {
+    stop("Destination path '", file.path(source_dir, output_dir), "' does not exist.")
   }
   # find csv and param files
   # if using out_file_basename find only those csvs
   if (!is.null(out_file_basename)) {
-    csv_files = list.files(path = output_dir, pattern = paste0("^",out_file_basename,".*\\.csv$"))
+    csv_files = list.files(path = file.path(source_dir, output_dir), pattern = paste0("^",out_file_basename,".*\\.csv$"))
   } else {
-    csv_files = list.files(path = output_dir, pattern = "*\\.csv")
+    csv_files = list.files(path = file.path(source_dir, output_dir), pattern = "*\\.csv")
   }
 
   params_files = list.files(path = source_dir, pattern = "*\\.params")
@@ -80,7 +80,7 @@ collect_output = function(source_dir = "./", basename = "rh_out_", output_dir = 
       cat("No param files to move at specified directory.\n")
     }
     # run metadata
-    runmeta = list.files(path = output_dir, pattern = "run_metadata_.*\\.txt")
+    runmeta = list.files(path = file.path(source_dir, output_dir), pattern = "run_metadata_.*\\.txt")
     if (length(runmeta) > 1) {
       cat("Multiple metadata files found\n")
       dtstr = gsub(".txt","", gsub("run_metadata_","",runmeta))

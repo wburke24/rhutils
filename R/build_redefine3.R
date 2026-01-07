@@ -6,12 +6,14 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   # ---------- Check Arguments ----------
   # Either need vars + values or std_thin
   if ((is.null(vars) | is.null(values)) & is.null(std_thin)) {
-    stop(cat("Input is required for both `vars` and `values`, or `std_thin`"))
+    stop("Input is required for both `vars` and `values`, or `std_thin`")
   }
   # if using vars + values - values must either be length of vars or 1
   if ((!is.null(vars) & !is.null(values)) && length(vars) != length(values) && length(values) != 1) {
-    stop(cat("Input length mismatch:", length(vars), "input `vars` and", length(values),
-             "input `values`. `length(values) == length(vars)` or `length(values) == 1`.\n"))
+    stop(sprintf(
+      "Input length mismatch: %d input `vars` and %d input `values`. `length(values) == length(vars)` or `length(values) == 1`.",
+      length(vars), length(values)
+    ))
   }
 
   # read and parse
@@ -110,7 +112,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     }
   }
 
-  if ( (is.null(redef_index) || all(!redef_index)) & (is.null(replace_index_all) || all(!replace_index_all)) ) {
+  if ( (is.null(redef_index) || length(redef_index) == 0) & (is.null(replace_index_all) || length(replace_index_all) == 0) ) {
     cat("No vars matched criteria, all set to -9999.\n")
   }
 

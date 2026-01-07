@@ -8,7 +8,7 @@ add_patch_areas = function(output_df, world_source) {
     cat("output_df already contains 'area' column.")
     return(output_df)
   }
-  world = read_world(world_source)
+  world = RHESSysPreprocessing::read_world(world_source)
   patchareas = world[world$level == "patch" & world$vars == "area",c("values","ID")]
   names(patchareas) = c("area", "patchID")
   patchareas$patchID = as.numeric(patchareas$patchID)
@@ -30,7 +30,7 @@ add_patch_veg_parm_IDs = function(output_df, world_source) {
     cat("output_df already contains 'veg_parm_ID' column.")
     return(output_df)
   }
-  world = read_world(world_source, patch_col = T)
+  world = RHESSysPreprocessing::read_world(world_source, patch_col = TRUE)
   veg_parm_IDs = world[world$level == "canopy_strata" & world$vars == "veg_parm_ID",c("values","ID", "patch_ID")]
   names(veg_parm_IDs) = c("veg_parm_ID","canopy_strataID", "patchID")
   veg_parm_IDs$patchID = as.numeric(veg_parm_IDs$patchID)
@@ -58,7 +58,7 @@ add_strata_veg_parm_IDs = function(output_df, world_source) {
     cat("output_df already contains 'veg_parm_ID' column.")
     return(output_df)
   }
-  world = read_world(world_source)
+  world = RHESSysPreprocessing::read_world(world_source)
   veg_parm_IDs = world[world$level == "canopy_strata" & world$vars == "veg_parm_ID",c("values","ID")]
   names(veg_parm_IDs) = c("veg_parm_ID","stratumID")
   veg_parm_IDs$stratumID = as.numeric(veg_parm_IDs$stratumID)
@@ -128,7 +128,7 @@ world_add_var = function(world, var, value, loc_var) {
   insert_row$values = value
   insert_row$vars = var
 
-  insert_pos_shift = insert_pos - shift(insert_pos,1,fill = 0)
+  insert_pos_shift = insert_pos - data.table::shift(insert_pos, 1, fill = 0)
   insert_pos_factor = rep(seq_along(insert_pos), insert_pos_shift)
   insert_pos_factor = c(insert_pos_factor, rep(tail(insert_pos_factor,1)+1, nrow(world)-tail(insert_pos,1)))
 
@@ -137,7 +137,7 @@ world_add_var = function(world, var, value, loc_var) {
     tmp = rbind(X,Y);tmp[nrow(tmp),"unique_ID"] = tmp[nrow(tmp)-1,"unique_ID"];return(tmp)
   }, insert_row)
   
-  world_comb = rbindlist(world_split)
+  world_comb = data.table::rbindlist(world_split)
   world_comb = world_comb[-nrow(world_comb),]
 
   return(world_comb)

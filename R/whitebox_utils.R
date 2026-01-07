@@ -333,7 +333,7 @@ wbox_subbasins_plot = function(subbasins, streams, output_dir, stream_threshold,
 }
 
 #' @export
-polaris2texture = function(basin, sand, clay, plot_out, writeplots=T) {
+polaris2texture = function(basin, sand, clay, plot_out, writeplots = TRUE, plots = TRUE) {
   fill.na <- function(x, i=5) {
     if(is.na(x)[i]) {
       return(mean(x, na.rm = T))

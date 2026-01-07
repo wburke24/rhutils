@@ -8,9 +8,9 @@ get_basin_daily = function(out_dir) {
     basin_files_in = list.files(path = out_dir, pattern = ".*\\.csv$", full.names = T)
   }
   run_names = gsub("_basin", "", gsub(".csv", "", basename(basin_files_in)))
-  basin_daily_list = lapply(basin_files_in, fread)
+  basin_daily_list = lapply(basin_files_in, data.table::fread)
   basin_daily_list = mapply(function(X,Y) {X$run = Y;return(X)} , basin_daily_list, run_names, SIMPLIFY = F)
-  basin_daily_dt = rbindlist(basin_daily_list)
+  basin_daily_dt = data.table::rbindlist(basin_daily_list)
   basin_daily_dt = RHESSysIOinR::add_dates(basin_daily_dt)
   return(basin_daily_dt)
 }
@@ -43,9 +43,9 @@ get_stratum_daily = function(out_dir) {
     stratum_files_in = list.files(path = out_dir, pattern = ".*\\.csv$", full.names = T)
   }
   run_names = gsub("_stratum.", "", gsub(".csv", "", basename(stratum_files_in)))
-  stratum_daily_list = lapply(stratum_files_in, fread)
+  stratum_daily_list = lapply(stratum_files_in, data.table::fread)
   stratum_daily_list = mapply(function(X,Y) {X$run = Y;return(X)} , stratum_daily_list, run_names, SIMPLIFY = F)
-  stratum_daily_dt = rbindlist(stratum_daily_list)
+  stratum_daily_dt = data.table::rbindlist(stratum_daily_list)
   stratum_daily_dt = RHESSysIOinR::add_dates(stratum_daily_dt)
   return(stratum_daily_dt)
 }
@@ -57,9 +57,9 @@ get_patch_daily = function(out_dir) {
     patch_files_in = list.files(path = out_dir, pattern = ".*\\.csv$", full.names = T)
   }
   run_names = gsub("_patch.", "", gsub(".csv", "", basename(patch_files_in)))
-  patch_daily_list = lapply(patch_files_in, fread)
+  patch_daily_list = lapply(patch_files_in, data.table::fread)
   patch_daily_list = mapply(function(X,Y) {X$run = Y;return(X)} , patch_daily_list, run_names, SIMPLIFY = F)
-  patch_daily_dt = rbindlist(patch_daily_list)
+  patch_daily_dt = data.table::rbindlist(patch_daily_list)
   patch_daily_dt = RHESSysIOinR::add_dates(patch_daily_dt)
   return(patch_daily_dt)
 }
@@ -78,6 +78,7 @@ agg_dyn = function(DT, name, aggvars, vars) {
 # ================================================================================
 #' @export
 agg_YM = function(X, Y) {
+  vars <- names(X)[!names(X) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "wy", "yd", "run", "sID")]
   out = X[, lapply(.SD, mean), by=c("year", "month"), .SDcols = vars]
   out$run = Y
   out$year_month = zoo::as.yearmon(paste0(out$year,"-", out$month))
@@ -89,6 +90,7 @@ agg_YM = function(X, Y) {
 #' @export
 agg_YM_strata = function(X, Y) {
   X[, sID := stratumID %% 10]
+  vars <- names(X)[!names(X) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "wy", "yd", "run", "sID")]
   out = X[, lapply(.SD, mean), by=c("year", "month", "sID"), .SDcols = vars]
   out$run = Y
   out$year_month = zoo::as.yearmon(paste0(out$year,"-", out$month))

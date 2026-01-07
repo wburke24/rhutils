@@ -33,7 +33,7 @@ check_worldfile = function(worldfile) {
   psizes = summary(factor(world$values[world$vars == "area" & world$level=="patch"]))
   psizesdf = data.frame(area_sq_m = names(psizes), count = unname(psizes))
   psizesdf = psizesdf[order(psizesdf$count, decreasing = T),]
-  rownames(psizesdf) = seq_along(psizesdf$area)
+  rownames(psizesdf) = seq_len(nrow(psizesdf))
   if (nrow(psizesdf) > 20) {
     psizesdf = psizesdf[1:20,]
   }

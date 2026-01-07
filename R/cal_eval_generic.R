@@ -5,8 +5,7 @@
 
 cal_eval_generic = function(sim, obs, compare_col, eval_monthly = F, obs_is_monthly = F, echo_best = T, agg_by = "mean") {
   # -------------------- REQUIREMENTS --------------------
-  require(hydroGOF)
-  require(data.table)
+  # hydroGOF and data.table functions accessed via ::
 
   # -------------------- CHECKS --------------------
   # if observed is monthly, eval must be monthly, do this automatically
@@ -16,7 +15,7 @@ cal_eval_generic = function(sim, obs, compare_col, eval_monthly = F, obs_is_mont
   }
   if (eval_monthly) {
     cat("Evaluating at monthly timestep.\n")
-    require(zoo)
+    # zoo functions accessed via ::
   } else {
     cat("Evaluating at daily timestep.\n")
   }

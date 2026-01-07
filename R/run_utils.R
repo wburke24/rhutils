@@ -8,9 +8,7 @@ parallel_runs = function(run_cmds) {
     stop("run_cmds must be a list of rhessys command line calls.\n")
   }
 
-  library(parallel)
-
-  n_cores = parallel::detectCores() - 1
+  n_cores = max(1L, parallel::detectCores() - 1L)
   cl = parallel::makeCluster(n_cores)
   parallel::clusterExport(cl = cl, varlist = c("run_cmds"), envir = environment())
   parallel::parLapply(cl = cl, X = seq_along(run_cmds), fun = function(X, run_cmds) { system(run_cmds[[X]])}, run_cmds = run_cmds)

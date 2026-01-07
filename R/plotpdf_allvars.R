@@ -144,11 +144,11 @@ plotpdf_allvars = function(out_dir,
       
       # ==================== GGPLOT ====================
       tmpplot = ggplot(DT_summary, aes(x = .data[[time_var]])) +
-        geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = "Min–Max"), alpha = 0.5) +
-        geom_ribbon(aes(ymin = q25, ymax = q75, fill = "25th–75th Percentile"), alpha = 0.6) +
+        geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = "Min-Max"), alpha = 0.5) +
+        geom_ribbon(aes(ymin = q25, ymax = q75, fill = "25th-75th Percentile"), alpha = 0.6) +
         geom_line(aes(y = mean, color = "Mean"), linewidth = 1) +
         # geom_line(aes(y = median, color = "Median"), linetype = "dashed", linewidth = 1) +
-        scale_fill_manual(name = "Range", values = c("Min–Max" = "grey80", "25th–75th Percentile" = "grey50")) +
+        scale_fill_manual(name = "Range", values = c("Min-Max" = "grey80", "25th-75th Percentile" = "grey50")) +
         scale_color_manual(name = "Statistic", values = c("Mean" = "black", "Mean Run" = meancol, 
       "Max Run" = maxcol, "Min Run" = mincol)) +
         guides(fill = guide_legend(order = 1), color = guide_legend(order = 2)) +

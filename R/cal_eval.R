@@ -10,11 +10,11 @@ cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {
   # so i usually input the data after i've fixed that, and not the path
   if (is.character(Qobs)) {
     cat("Reading observed streamflow data from: ",Qobs, "\n",sep="")
-    Qobs = fread(Qobs)
+    Qobs = data.table::fread(Qobs)
   }
   if (is.character(Qsim)) {
     cat("Reading simulated streamflow data from: ",Qsim, "\n",sep="")
-    Qsim = rhutils::get_basin_daily(out_dir)
+    Qsim = rhutils::get_basin_daily(Qsim)
   }
 
   if (!"Flow_mmd" %in% names(Qobs)) {
@@ -59,7 +59,7 @@ cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {
       return(list(i, nse, nse_log,pbias,rmse, r))
     }
     eval_list = lapply(run_IDs, FUN = eval_fun_mn)
-    eval_df = rbindlist(eval_list)
+    eval_df = data.table::rbindlist(eval_list)
     names(eval_df) = c("run", "NSE", "NSElog", "PBIAS","RMSE", "R2")
 
     if (echo_best) {
@@ -79,7 +79,7 @@ cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {
     return(list(i, nse, nse_log, pbias, rmse, r))
   }
   eval_list = lapply(run_IDs, FUN = eval_fun)
-  eval_df = rbindlist(eval_list)
+  eval_df = data.table::rbindlist(eval_list)
   names(eval_df) = c("run", "NSE", "NSElog", "PBIAS", "RMSE", "R2")
 
   if (echo_best) {
