@@ -1,6 +1,15 @@
 #' build_redefine3
 #' 
-#' One more try better now
+#' Creates a redefine world file, based on input worldfile and user specified variables to redefine. Can either specify variables and values to replace, or a standard thinning value to apply to a set of predefined carbon storage variables. Optionally can filter by patchID, strataID, and veg_parm_ID.
+#' @param worldfile Path to worldfile or worldfile data.frame
+#' @param out_file Path to output redefine worldfile
+#' @param vars Variable names to redefine
+#' @param values Values to assign to variables
+#' @param std_thin Standard thinning value
+#' @param patchID Patch IDs to filter
+#' @param strataID Strata IDs to filter
+#' @param veg_parm_ID Vegetation parameter IDs to filter
+#' @param add Add to existing redefine file (TRUE/FALSE)
 #' @export
 build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NULL, std_thin = NULL, patchID = NULL, strataID = NULL, veg_parm_ID = NULL, add = FALSE) {
   # ---------- Check Arguments ----------

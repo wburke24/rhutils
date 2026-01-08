@@ -1,6 +1,12 @@
 # Calibration utilities
 # except for cal_eval
 # ================================================================================
+#' Save parameter sensitivity tables to a PDF
+#'
+#' @param pars_sens_out List of sensitivity result tables
+#' @param output_path Output PDF path
+#' @param pdfwidth PDF width in inches
+#' @param pdfheight PDF height in inches
 #' @export
 pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_tables.pdf", pdfwidth = 14, pdfheight = 14) {
   # Use fully qualified calls to avoid search path dependencies
@@ -25,6 +31,11 @@ pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_table
 # except for cal_eval
 
 # ================================================================================
+#' Combine definition changes with evaluation statistics
+#'
+#' @param defpar_df Data frame of definition parameter changes
+#' @param eval Data frame of evaluation metrics
+#' @param stat Statistic name used for ordering
 #' @export
 def_changes_by_evaldf = function(defpar_df, eval, stat = "NSE") {
   # assume that eval is already ordered by calibration run id
@@ -70,6 +81,11 @@ def_changes_by_evaldf = function(defpar_df, eval, stat = "NSE") {
 }
 
 # ================================================================================
+#' Summarize definition changes ordered by evaluation metric
+#'
+#' @param out_dir Output directory containing parameter tables
+#' @param eval Data frame of evaluation metrics
+#' @param stat Statistic name used for ordering
 #' @export
 def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
   inputpars = read_pars_table(out_dir)
@@ -85,6 +101,10 @@ def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
 }
 
 # ================================================================================
+#' Compute parameter ranges for top-performing runs
+#'
+#' @param defchg_nse Combined parameter/statistics table
+#' @param pct Quantile threshold used to select runs
 #' @export
 par_ranges_by_pctle = function(defchg_nse, pct = .90) {
   x = as.numeric(defchg_nse[1,3:ncol(defchg_nse)])

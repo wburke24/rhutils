@@ -1,6 +1,13 @@
 #' cal_eval_generic
 #'
 #' Calculates calibration statistics: nse, lognse, pbias, rmse, and r2, at either daily or monthly.
+#' @param sim Simulated data data.frame
+#' @param obs Observed data data.frame
+#' @param compare_col Column name to compare
+#' @param eval_monthly Evaluate at monthly timestep (TRUE/FALSE)
+#' @param obs_is_monthly Observed data is monthly (TRUE/FALSE)
+#' @param echo_best Echo best run by NSE (TRUE/FALSE)
+#' @param agg_by Aggregation method ('mean' or 'sum')
 #' @export
 
 cal_eval_generic = function(sim, obs, compare_col, eval_monthly = F, obs_is_monthly = F, echo_best = T, agg_by = "mean") {

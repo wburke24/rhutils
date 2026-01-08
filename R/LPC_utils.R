@@ -8,6 +8,12 @@
 # output_rules_file = "preprocessing/rules/LPC_90m.rules"
 
 # lpc_extract
+#' Extract and prep Landfire/LPC tiles
+#'
+#' @param lpc_data_path Directory containing LPC tiles
+#' @param lpc_pattern Vector of tile patterns
+#' @param mask_map_path Path to mask raster
+#' @param plots Logical; show diagnostic plots
 #' @export
 lpc_extract = function(lpc_data_path, lpc_pattern, mask_map_path, plots = F) {
   lpc_filepaths = lapply(lpc_pattern, list.files, path = lpc_data_path, full.names = T)
@@ -66,6 +72,10 @@ lpc_extract = function(lpc_data_path, lpc_pattern, mask_map_path, plots = F) {
 # lpc_map_list = lpc_extract(lpc_data_path = lpc_data_path, lpc_pattern = lpc_pattern, mask_map_path = mask_map_path)
 
 # lpc maps to dataframe
+#' Convert LPC rasters to data frame
+#'
+#' @param lpc_map_list List of LPC raster layers
+#' @param plots Logical; show histograms
 #' @export
 lpc_as_df = function(lpc_map_list, plots = F) {
   
@@ -91,6 +101,10 @@ lpc_as_df = function(lpc_map_list, plots = F) {
 # lpc_df = lpc_as_df(lpc_map_list)
 
 #lpc_bin
+#' Bin LPC percentages
+#'
+#' @param lpc_df LPC data frame
+#' @param round_value Rounding increment
 #' @export
 lpc_bin = function(lpc_df, round_value) {
   # ------------------------------ BINNING FOR MSR RULES ------------------------------
@@ -126,6 +140,9 @@ lpc_bin = function(lpc_df, round_value) {
 # lpc_bin_df = lpc_bin(lpc_df = lpc_df, round_value = round_value)
 
 # make_unique_rules
+#' Make standard rule table
+#'
+#' @param lpc_bin_df Binned LPC data frame
 #' @export
 make_std_rules = function(lpc_bin_df) {
   # ------------------------------ MAKE MSR RULE ------------------------------
@@ -140,6 +157,11 @@ make_std_rules = function(lpc_bin_df) {
 # unique_rules = outlist[[2]]
 
 # make_rules_map
+#' Create rules map raster
+#'
+#' @param lpc_rules_df Rules data frame
+#' @param mask_map_path Path to mask raster
+#' @param lpc_map_list List of LPC rasters
 #' @export
 make_rules_map = function(lpc_rules_df, mask_map_path, lpc_map_list) {
   Mode <- function(x) {
@@ -178,6 +200,15 @@ make_rules_map = function(lpc_rules_df, mask_map_path, lpc_map_list) {
 # writeRaster(rules_map_std, output_rules_map, overwrite = T)
 
 # LPC2std_veg_cover
+#' Convert LPC to standard vegetation cover IDs
+#'
+#' @param lpc_df LPC data frame with cover percentages
+#' @param mask_map_path Path to mask raster
+#' @param lpc_map_list List of LPC rasters
+#' @param vegid_tree Veg ID for tree class
+#' @param vegid_shrub Veg ID for shrub class
+#' @param vegid_herb Veg ID for herb class
+#' @param vegid_other Veg ID for other class
 #' @export
 LPC2std_veg_cover = function(lpc_df, mask_map_path, lpc_map_list, vegid_tree = 1, vegid_shrub = 5, vegid_herb = 3, vegid_other = 4) {
   Mode <- function(x) {
@@ -223,6 +254,16 @@ LPC2std_veg_cover = function(lpc_df, mask_map_path, lpc_map_list, vegid_tree = 1
 # write_rules
 # vegid_XXXX to set the def file id for a given veg type from the LPC data
 # MODIFY VEG ID, ADD 20 (PREFIX WITH 2)
+#' Write RHESSys rules file from LPC-derived rules
+#'
+#' @param rules Data frame of rules and cover fractions
+#' @param output_rules_file Path to write the rules file
+#' @param vegid_tree Definition file ID for trees
+#' @param vegid_shrub Definition file ID for shrubs
+#' @param vegid_herb Definition file ID for herbs
+#' @param vegid_other Definition file ID for other vegetation
+#' @param thin_vegid_mod Offset to apply for thinned vegetation IDs
+#' @param strata_ct Optional vector of strata counts per rule
 #' @export
 write_rules_file = function(rules, output_rules_file, vegid_tree = 1, vegid_shrub = 5, vegid_herb = 3, vegid_other = 4, thin_vegid_mod = 0, strata_ct = NULL) {
   
@@ -270,6 +311,11 @@ write_rules_file = function(rules, output_rules_file, vegid_tree = 1, vegid_shru
 # )
 
 # make_thinning_rules
+#' Create thinned vegetation rule table
+#'
+#' @param unique_rules Data frame of unique rules
+#' @param tree_thin_pct Proportion of tree cover to thin
+#' @param shrub_thin_pct Proportion of shrub cover to thin
 #' @export
 make_thin_rule = function(unique_rules, tree_thin_pct = 0, shrub_thin_pct = 0) {
   thin_rules = unique_rules

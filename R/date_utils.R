@@ -2,6 +2,9 @@
 
 # ================================================================================
 # output rhessys formatted range of dates only including complete water years
+#' Water-year date range
+#'
+#' @param dates Vector of dates
 #' @export
 wy_range = function(dates) {
   datetxt = as.Date(dates)
@@ -17,6 +20,10 @@ wy_range = function(dates) {
 }
 
 # ================================================================================
+#' Add run and year-month indices
+#'
+#' @param X Data frame with year/month columns
+#' @param Y Run identifier
 #' @export
 daily_dates = function(X, Y) {
   out = X
@@ -41,6 +48,9 @@ daily_dates = function(X, Y) {
 # }
 
 # ================================================================================
+#' Add date-derived columns
+#'
+#' @param df Data frame with a date column
 #' @export
 add_dmy = function(df) {
   df$date = as.POSIXlt(df$date)

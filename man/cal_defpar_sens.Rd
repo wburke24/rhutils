@@ -14,6 +14,21 @@ cal_defpar_sens(
   def_changes_by_stat = F
 )
 }
+\arguments{
+\item{out_dir}{Output directory containing simulation results}
+
+\item{obs_source}{Path to observed data or data.frame}
+
+\item{input_def_pars}{Input definition parameters list}
+
+\item{monthly}{Use monthly aggregation (TRUE/FALSE)}
+
+\item{sortby}{Metric to sort by (NSE, NSElog, PBIAS, RMSE, r2)}
+
+\item{add_base}{Add base_flow to streamflow (TRUE/FALSE)}
+
+\item{def_changes_by_stat}{Output combined dataframe of parameters and stats (TRUE/FALSE)}
+}
 \description{
 Sensetivity of of calibration evaluation statistics (NSE, NSElog, PBIAS, RMSE, r2) to changes in defintion file parameters.
 }

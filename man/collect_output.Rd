@@ -61,7 +61,14 @@ files matching the pattern are present, the most recent is selected.
 \examples{
 \dontrun{
 # Collect outputs into output/rh_out_<timestamp> and do not trigger alert
-collect_output(source_dir = "~/projects/my_run", basename = "run_", output_dir = "output", alert = FALSE)
+collect_output(
+ source_dir = "~/projects/my_run",
+ basename = "run_",
+ output_dir = "output",
+ alert = FALSE
+)
+
+
 
 # Use current working directory and default names
 collect_output()

@@ -2,6 +2,10 @@
 
 # ================================================================================
 # add patch areas based on worldfile
+#' Add patch areas from worldfile
+#'
+#' @param output_df Data table with patchID column
+#' @param world_source Path to worldfile or data frame
 #' @export
 add_patch_areas = function(output_df, world_source) {
   if ("area" %in% names(output_df)) {
@@ -24,6 +28,10 @@ add_patch_areas = function(output_df, world_source) {
 
 # ================================================================================
 # add patch veg parm ID based on worldfile
+#' Add patch vegetation parameter IDs from worldfile
+#'
+#' @param output_df Data table with patchID column
+#' @param world_source Path to worldfile or data frame
 #' @export
 add_patch_veg_parm_IDs = function(output_df, world_source) {
   if ("veg_parm_ID" %in% names(output_df)) {
@@ -52,6 +60,10 @@ add_patch_veg_parm_IDs = function(output_df, world_source) {
 
 # ================================================================================
 # add strata veg parm ID based on worldfile to strata level output
+#' Add strata vegetation parameter IDs from worldfile
+#'
+#' @param output_df Data table with stratumID column
+#' @param world_source Path to worldfile or data frame
 #' @export
 add_strata_veg_parm_IDs = function(output_df, world_source) {
   if ("veg_parm_ID" %in% names(output_df)) {
@@ -75,6 +87,9 @@ add_strata_veg_parm_IDs = function(output_df, world_source) {
 
 # ================================================================================
 # add patch family ID and area
+#' Add patch family IDs and areas
+#'
+#' @param output_df Data table with patchID, area, year, month
 #' @export
 add_patchfamily_IDarea = function(output_df) {
   if ("familyID" %in% names(output_df) & "family_area" %in% names(output_df)) {
@@ -91,6 +106,9 @@ add_patchfamily_IDarea = function(output_df) {
 
 # ================================================================================
 # aggregate to patch family using area weights
+#' Aggregate patch data to patch families
+#'
+#' @param output_df Data table with patch-level outputs
 #' @export
 patches2patchfamily = function(output_df) {
   reqvars = c("basinID", "hillID", "zoneID", "familyID", "year","month","day","area_prop")
@@ -119,6 +137,13 @@ patches2patchfamily = function(output_df) {
 
 # ================================================================================
 # add var in worldfile below specified loc_var
+#' Insert a variable into a worldfile table
+#'
+#' @param world Worldfile data frame
+#' @param var Variable name to insert
+#' @param value Value to assign to the new variable
+#' @param loc_var Existing variable name after which to insert
+#' @return Updated worldfile data frame with the new row inserted
 #' @export
 world_add_var = function(world, var, value, loc_var) {
   

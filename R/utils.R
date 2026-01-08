@@ -1,5 +1,8 @@
 # General and miscellaneous utilities
 
+#' Create a standard RHESSys project folder layout
+#'
+#' @param base_dir Base directory in which to create folders
 #' @export
 setup_rhessys_folders = function(base_dir) {
   # base_dir = "~/Projects/RedRock/"
@@ -52,6 +55,11 @@ setup_rhessys_folders = function(base_dir) {
 # ================================================================================
 
 # text and sound alert, inside of collect output
+#' Play a visual and audio alert when simulations complete
+#'
+#' @param txt Message to display
+#' @param fg Foreground ANSI color code
+#' @param bg Background ANSI color code
 #' @export
 sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
   # txt = "\t\t\tSimulations Complete\t\t\t"
@@ -66,6 +74,12 @@ sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
 
 # ================================================================================
 # copy a source world redefine file and rename it using a specified date
+#' Copy redefine TEClist entry to a new date
+#'
+#' @param input_redef Path to input redefine tec file
+#' @param redef_date Date to copy
+#' @param worldfile Path to worldfile
+#' @param overwrite Logical; overwrite output
 #' @export
 tec_copy_redef = function(input_redef, redef_date, worldfile, overwrite = F) {
   if (length(input_redef) > 1) {
@@ -81,6 +95,10 @@ tec_copy_redef = function(input_redef, redef_date, worldfile, overwrite = F) {
 
 # ================================================================================
 # this is to reouput a worldfile read into R via read_world
+#' Write a worldfile table back to disk
+#'
+#' @param world Data frame produced by `read_world`
+#' @param path Output file path for the worldfile
 #' @export
 write_world = function(world, path) {
   # world input should be output from read_world
@@ -91,6 +109,9 @@ write_world = function(world, path) {
 
 # ================================================================================
 # find a world.state file and path, useful for finding and renaming newly made worldfiles
+#' Locate a worldfile .state companion file
+#'
+#' @param worldfile Path to worldfile
 #' @export
 worldstate = function(worldfile) {
   world_state = list.files(path = dirname(worldfile), pattern = paste0(basename(worldfile), ".*\\.state"), full.names = T)
@@ -107,6 +128,9 @@ worldstate = function(worldfile) {
 
 # ================================================================================
 # water balance for multiple basin outputs using output filters
+#' Compute water balance for multiple basin outputs
+#'
+#' @param out_dir Directory containing basin output CSV files
 #' @export
 watbal_basin_of_multi = function(out_dir) {
   basinfiles = list.files(out_dir, "basin.csv", full.names = T)
@@ -136,6 +160,10 @@ watbal_basin_of_multi = function(out_dir) {
 
 # ================================================================================
 # get runID - for setting output ids and collecting output and associating with an r obj
+#' Get or update run ID
+#'
+#' @param increment Logical; increment stored run ID
+#' @param reset Logical; reset stored run ID to zero
 #' @export
 GetRunID = function(increment = FALSE, reset = FALSE) {
   runidfile = ".runid"
@@ -169,6 +197,10 @@ GetRunID = function(increment = FALSE, reset = FALSE) {
 
 # ================================================================================
 # AddRunIDtoOutputFilters
+#' Append run ID to output filters
+#'
+#' @param output_filter List of output filters
+#' @param runid Run identifier string/number
 #' @export
 AddRunIDtoOutputFilters = function(output_filter, runid) {
   output_filter[names(output_filter) == "filter"] = lapply(output_filter[names(output_filter) == "filter"],
@@ -176,6 +208,9 @@ AddRunIDtoOutputFilters = function(output_filter, runid) {
   return(output_filter)
 }
 
+#' Find run ID in output directory
+#'
+#' @param out_dir Output directory path
 #' @export
 find_runID = function(out_dir) {
   allcsv = list.files(out_dir, ".csv")
@@ -193,6 +228,9 @@ find_runID = function(out_dir) {
   }
 }
 
+#' Extract run ID from filenames
+#'
+#' @param out_dir Output directory path
 #' @export
 ExtractRunID = function(out_dir) {
   allfiles = list.files(out_dir)
@@ -247,6 +285,10 @@ ExtractRunID = function(out_dir) {
 #   return(stripped_strings)
 # }
 
+#' Open the most recent file matching a pattern
+#'
+#' @param dir Directory to search
+#' @param pattern Filename pattern (regex)
 #' @export
 find_open_most_recent <- function(dir, pattern) {
   files = list.files(path = dir, pattern = pattern, full.names = T)

@@ -16,6 +16,25 @@ build_redefine3(
   add = FALSE
 )
 }
+\arguments{
+\item{worldfile}{Path to worldfile or worldfile data.frame}
+
+\item{out_file}{Path to output redefine worldfile}
+
+\item{vars}{Variable names to redefine}
+
+\item{values}{Values to assign to variables}
+
+\item{std_thin}{Standard thinning value}
+
+\item{patchID}{Patch IDs to filter}
+
+\item{strataID}{Strata IDs to filter}
+
+\item{veg_parm_ID}{Vegetation parameter IDs to filter}
+
+\item{add}{Add to existing redefine file (TRUE/FALSE)}
+}
 \description{
-One more try better now
+Creates a redefine world file, based on input worldfile and user specified variables to redefine. Can either specify variables and values to replace, or a standard thinning value to apply to a set of predefined carbon storage variables. Optionally can filter by patchID, strataID, and veg_parm_ID.
 }

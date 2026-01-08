@@ -1,6 +1,11 @@
 # tec utils
 
 # adds a tec event, using rhessys date format, reorders output
+#' Add a tec event
+#'
+#' @param input_tec_data Tec data frame
+#' @param date Date-time string in RHESSys format
+#' @param tecname Event name
 #' @export
 add_tec = function(input_tec_data, date, tecname) {
   datesplit = unlist(strsplit(as.character(date), split = " "))

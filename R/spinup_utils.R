@@ -2,6 +2,9 @@
 
 
 # add level index to worldfile dataframe
+#' Add numeric level indices to a worldfile table
+#'
+#' @param world Worldfile data frame
 #' @export
 world_add_level_i = function(world) {
   # add numeric level col
@@ -15,6 +18,9 @@ world_add_level_i = function(world) {
 }
 
 # add vegparmID col to worldfile dataframe - IF there are more than 1 strata, vegID is only or strata level
+#' Add patch-level vegetation parameter identifiers
+#'
+#' @param world Worldfile data frame
 #' @export
 world_add_patch_vegparmIDcol = function(world) {
   if (!"patch_ID" %in% names(world)) {
@@ -37,6 +43,9 @@ world_add_patch_vegparmIDcol = function(world) {
 }
 
 # add family ID and rule ID, will cover the strata and patches
+#' Add family and rule identifiers to a worldfile table
+#'
+#' @param world Worldfile data frame containing `family_ID` entries
 #' @export
 world_add_familyID_RuleID = function(world) {
   if (any(world$vars == "family_ID")) {
@@ -72,6 +81,10 @@ world_add_familyID_RuleID = function(world) {
 }
 
 # extract a world based on a target unique index ID
+#' Extract a sub-world by unique ID
+#'
+#' @param world Worldfile data frame
+#' @param target_unique_ID Unique ID to extract around
 #' @export
 extract_world = function(world, target_unique_ID) {
 
@@ -131,6 +144,10 @@ extract_world = function(world, target_unique_ID) {
 }
 
 # extract a world based on a target unique index ID
+#' Extract a patch family sub-world
+#'
+#' @param familyID Patch family identifier
+#' @param world Worldfile data frame with family information
 #' @export
 pfam_extract_world = function(familyID, world) {
   # assume/check - world has familyID, familyID cover patch and strata
@@ -184,6 +201,10 @@ pfam_extract_world = function(familyID, world) {
   return(world_extract)
 }
 
+#' Select representative patch family by rule
+#'
+#' @param rule Rule identifier
+#' @param world Worldfile data frame with rule information
 #' @export
 select_pfam = function(rule, world) {
   tmp = as.numeric(as.data.frame(world[world$rule_ID == rule & world$vars == "z","values"])$values) 
@@ -194,6 +215,9 @@ select_pfam = function(rule, world) {
 }
 
 # # ASSUMES 1 HILLSLOPE
+#' Create a single-patch flowtable string
+#'
+#' @param world Worldfile data frame
 #' @export
 make_1pflow = function(world) {
   hill = unique(world$ID[world$level == "hillslope"])
@@ -209,6 +233,9 @@ make_1pflow = function(world) {
   return(flow_out)
 }
 
+#' Create a single patch-family flowtable string
+#'
+#' @param world Worldfile data frame
 #' @export
 make_1pfamflow = function(world) {
 
@@ -232,8 +259,11 @@ make_1pfamflow = function(world) {
 }
 
 
+#' Select patch closest to median elevation and cover for a veg ID
+#'
+#' @param x Vegetation parameter ID
+#' @param world Worldfile data frame
 #' @export
-# selecting patches based on veg parm IDs and median cover + elevation, using unique ID to extract below
 select_mean_vegID_patch = function(x, world) {
   cat("Selecting patch for veg_parm_ID:", x, "\n")
   cat("Using median elevation and cover fraction to select patch\n")
@@ -249,8 +279,11 @@ select_mean_vegID_patch = function(x, world) {
   return(subset$unique_ID[which.min(dist)])
 }
 
+#' Select patch family closest to median elevation and cover for a rule ID
+#'
+#' @param x Rule identifier
+#' @param world Worldfile data frame with rule information
 #' @export
-# selecting patches based on rule IDs and median cover + elevation, using family ID to extract below
 select_familyID_per_vegID_MSR = function(x, world) {
   cat("Selecting patch FAMILY ID for rule_ID:", x, "\n")
   cat("\tUsing median elevation and cover fraction to select patch\n")
@@ -269,8 +302,12 @@ select_familyID_per_vegID_MSR = function(x, world) {
   return(subset$family_ID[which.min(dist)])
 }
 
+#' Combine spun worlds into a new worldfile
+#'
+#' @param spun_world_paths Vector of spun worldfile paths
+#' @param original_world_path Path to the original worldfile
+#' @param ID Identifier column to align on (`"rule_ID"` or `"veg_parm_ID"`)
 #' @export
-
 new_world_from_spun_worlds = function(spun_world_paths, original_world_path, ID = "rule_ID") {
   # data.table functions accessed via ::
   

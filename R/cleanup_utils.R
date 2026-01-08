@@ -1,6 +1,9 @@
 # cleanup utils
 
 # ================================================================================
+#' Move WMFire grids into timestamped folder
+#'
+#' @param dir Directory containing WMFire grid outputs
 #' @export
 cleanup_wmfire = function(dir) {
   pat = "ETGridYear|FireFailedIterGridYear|FireSizes|FireSpreadIterGridYear|FireSpreadPropGridYear|LoadGridYear|PDefGridYear|PETGridYear|PLoadGridYear|PSlopeGridYear|PWindGridYear|RelDefGridYear|SoilMoistGridYear|UnderETGridYear|UnderPETGridYear|VegLoadGridYear|CWDGridYear"
@@ -13,6 +16,10 @@ cleanup_wmfire = function(dir) {
 }
 
 # ================================================================================
+#' Collect CSV outputs into a new folder
+#'
+#' @param dir Directory containing CSV outputs
+#' @param dir_base Base name for output directory
 #' @export
 collect_csvs = function(dir, dir_base = "rh_out_") {
   csv_files = list.files(path = dir, pattern = "*\\.csv")
@@ -30,6 +37,9 @@ collect_csvs = function(dir, dir_base = "rh_out_") {
 }
 
 # ================================================================================
+#' Collect params files into a new folder
+#'
+#' @param dir Directory containing *.params files
 #' @export
 collect_params = function(dir) {
   params_files = list.files(path = dir, pattern = "*\\.params")

@@ -1,6 +1,12 @@
 # clim utils
 
 # ================================================================================
+#' Repeat a climate file n times
+#'
+#' @param clim Path to climate file or data.frame
+#' @param file Output file prefix
+#' @param n Number of repetitions
+#' @param units Units for repetition (e.g., "years")
 #' @export
 clim_repeat = function(clim, file, n, units = "years") {
 

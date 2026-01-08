@@ -6,6 +6,15 @@
 \usage{
 cal_eval(Qsim, Qobs, monthly = F, echo_best = T)
 }
+\arguments{
+\item{Qsim}{Simulated streamflow data or path to file}
+
+\item{Qobs}{Observed streamflow data or path to file}
+
+\item{monthly}{Use monthly aggregation (TRUE/FALSE)}
+
+\item{echo_best}{Echo best run by NSE (TRUE/FALSE)}
+}
 \description{
 Takes either the paths to simulated and observed streamflow, or the dataframes/datatables themselves, and calculates
 nse, lognse, pbias, rmse, and r2, at either daily or monthly. Requires get_basin_daily from rhutils and the datatable packges.

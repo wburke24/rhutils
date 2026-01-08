@@ -2,6 +2,9 @@
 
 #  Read - Write ================================================================================
 
+#' Read a definition file
+#'
+#' @param def_file Path to a RHESSys definition file
 #' @export
 read_def = function(def_file) {
   def_read = readLines(def_file, warn = FALSE)
@@ -16,6 +19,12 @@ read_def = function(def_file) {
 
 # ================================================================================
 # THIS DOES EVERYTHING NOW - READS TABLE, FINDS TABLE IN OUTPUT FOLDER, CONVERTS TO LIST
+#' Read a parameter table
+#'
+#' @param out_dir Output directory containing params subfolder
+#' @param csv Optional path to a parameter CSV
+#' @param listformat Logical; return list instead of data frame
+#' @param table_name Filename pattern for parameter table
 #' @export
 read_pars_table = function(out_dir = NULL, csv = NULL, listformat = F, table_name = "all_def_changes") {
   if (is.null(out_dir) & is.null(csv)) {
@@ -68,6 +77,9 @@ read_pars_table = function(out_dir = NULL, csv = NULL, listformat = F, table_nam
 }
 
 # ================================================================================
+#' Convert parameter CSV to list
+#'
+#' @param defpar_csv Path to parameter CSV file
 #' @export
 defpars_csv2list = function(defpar_csv) {
   cat("Switch to read_pars_table")
@@ -80,6 +92,10 @@ defpars_csv2list = function(defpar_csv) {
 }
 
 # ================================================================================
+#' Write parameter table
+#'
+#' @param input_def_pars Definition parameter list
+#' @param outfile_basename Base name for output CSV
 #' @export
 write_param_table = function(input_def_pars, outfile_basename = "all_def_changes") {
   vars_defs = data.frame(Variable = sapply(input_def_pars, "[[", 2), Def_file = sapply(input_def_pars, "[[", 1))
@@ -92,6 +108,11 @@ write_param_table = function(input_def_pars, outfile_basename = "all_def_changes
 
 # ================================================================================
 #only works for single def pars
+#' Write updated definition files
+#'
+#' @param input_def_pars Definition parameter list
+#' @param input_hdr Header lines to prepend
+#' @param filename_ext Optional filename extension
 #' @export
 write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NULL) {
   # def_pars_df = data.frame(matrix(unlist(input_def_pars), nrow = length(input_def_pars), byrow = T))
@@ -120,6 +141,9 @@ write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NUL
 # }
 
 # ================================================================================
+#' Convert defpar list to data frame
+#'
+#' @param defpars List of definition parameters
 #' @export
 defpars_list2df = function (defpars) {
   df = data.frame(Variable = sapply(defpars, "[[", 2), Def_file = sapply(defpars, "[[", 1))
@@ -130,6 +154,9 @@ defpars_list2df = function (defpars) {
 
 # ================================================================================
 # transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr
+#' Pivot definition parameter data frame to columns
+#'
+#' @param defpar_df Definition parameter data frame
 #' @export
 defpar_df_t2parcols = function(defpar_df) {
   df_t = as.data.frame(t(defpar_df[, names(defpar_df) != c("Parameter","File")]))
@@ -144,6 +171,11 @@ defpar_df_t2parcols = function(defpar_df) {
 
 #  Extract/Subset ================================================================================
 
+#' Copy parameter values by variable
+#'
+#' @param pars Parameter list
+#' @param copy_var Variable name to copy from
+#' @param replace_var Variable name to replace
 #' @export
 copy_param_by_var = function(pars, copy_var, replace_var) {
   tmp = pars[[which(lapply(pars,"[[",2 ) == copy_var)]]
@@ -158,6 +190,9 @@ copy_param_by_var = function(pars, copy_var, replace_var) {
 
 # ================================================================================
 # remove duplicate def list entry
+#' Remove duplicate definition parameters
+#'
+#' @param def_list List of definition parameters
 #' @export
 defpar_rm_dup = function(def_list) {
   pars = paste0(sapply(def_list, "[[",1), "-", sapply(def_list, "[[",2))
@@ -168,6 +203,9 @@ defpar_rm_dup = function(def_list) {
 
 # ================================================================================
 # fill pars with repeats based on max number of pars
+#' Fill repeat parameters
+#'
+#' @param pars_list List of parameter lists
 #' @export
 fill_rep_pars = function(pars_list) {
   npars = sapply(pars_list, function(X) {length(X[[3]])})
@@ -176,6 +214,10 @@ fill_rep_pars = function(pars_list) {
 
 # ================================================================================
 # duplicate soil def pars for multiple soils
+#' Duplicate soil parameters
+#'
+#' @param input_def_pars Definition parameter list
+#' @param input_hdr Header lines to prepend
 #' @export
 dup_soil_pars = function(input_def_pars, input_hdr) {
   par_df = as.data.frame(t(sapply(input_def_pars, function(X){X[1:2]})))
@@ -200,6 +242,9 @@ dup_soil_pars = function(input_def_pars, input_hdr) {
   return(new_input_def_pars)
 }
 # ================================================================================
+#' Get only varied definition parameters
+#'
+#' @param defpars List of definition parameters
 #' @export
 get_only_varied_defpars_list = function(defpars) {
   num_vals = unlist(lapply(defpars, FUN = function(X){length(X[[3]])}))
@@ -218,6 +263,10 @@ get_only_varied_defpars_list = function(defpars) {
 
 # ================================================================================
 # get new parlist based on id/num of existing par list
+#' Extract parameters by run number
+#'
+#' @param pars_list List of definition parameters
+#' @param runnum Run identifier
 #' @export
 defpar_extract_byrunnum = function(pars_list, runnum) {
   extfun = function(X,Y) {
@@ -230,6 +279,10 @@ defpar_extract_byrunnum = function(pars_list, runnum) {
 
 # ================================================================================
 # param from def file
+#' Get a parameter from a definition file
+#'
+#' @param def_file Path to definition file
+#' @param parameter Optional parameter name to extract
 #' @export
 get_def_par = function(def_file, parameter = NULL) {
   tmp = read_def(def_file)
@@ -248,6 +301,11 @@ get_def_par = function(def_file, parameter = NULL) {
 }
 # ================================================================================
 # list of def file, param, values, from current def file
+#' Make parameter list from definition file
+#'
+#' @param def_file Path to definition file
+#' @param parameters Parameter names to extract
+#' @param defaults Optional default values
 #' @export
 make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
   # defaults = "~/Repos/RHESSys-develop/rhessys/init/construct_stratum_defaults.c"
@@ -284,6 +342,9 @@ make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
 
 #  Statistics/Param Manipulation ================================================================================
 # mean of n def pars
+#' Mean of definition parameter vector
+#'
+#' @param X Numeric vector
 #' @export
 defpar_mean = function(X) {
   if (is.numeric(X[[3]])) {
@@ -295,6 +356,10 @@ defpar_mean = function(X) {
 }
 
 # ================================================================================
+#' Sample uniformly within a range
+#'
+#' @param X Numeric vector of length 2 (min, max)
+#' @param n Number of samples
 #' @export
 runif_sample = function(X, n) {
   if (is.character(X[[3]]) | length(X[[3]]) == 1) {
@@ -309,6 +374,10 @@ runif_sample = function(X, n) {
 }
 
 # ================================================================================
+#' Sample uniformly for all parameters
+#'
+#' @param par_ranges List of parameter ranges
+#' @param n_pars_each Number of samples per parameter
 #' @export
 unif_sample_all = function(par_ranges, n_pars_each) {
   npars = lapply(par_ranges, function(X) {length(X[[3]])})
@@ -322,6 +391,10 @@ unif_sample_all = function(par_ranges, n_pars_each) {
 }
 
 # ================================================================================
+#' Compute percentile range
+#'
+#' @param X Numeric vector
+#' @param pct Percentile (0-1)
 #' @export
 pct_rng = function(X, pct) {
   x1 = (X-X*pct)
@@ -331,6 +404,9 @@ pct_rng = function(X, pct) {
 
 # ================================================================================
 # create parameter set based on all combinations of varying input vars
+#' Generate all parameter combinations
+#'
+#' @param defpars List of parameter options
 #' @export
 def_par_allcomb = function(defpars) {
   npars = lapply(X = defpars, FUN = function(X) {out = length(X[[3]]); return(out)})
@@ -349,6 +425,12 @@ def_par_allcomb = function(defpars) {
 
 #  Sensetivity ================================================================================
 # parameter sensetivity, for each output var
+#' Sensitivity of parameters
+#'
+#' @param out_dir Output directory with simulation results
+#' @param input_def_pars Definition parameter list
+#' @param sortby Statistic to sort by
+#' @param omit_mising_data Logical; omit runs with missing data
 #' @export
 pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data = T) {
 

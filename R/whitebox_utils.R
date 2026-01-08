@@ -2,6 +2,18 @@
 
 # ================================================================================
 # resample and trim dem, make breach, d8 pointer, d8 accum, gauge snap, basin extent
+#' Derive streams, snapped gauge, and basin extent
+#'
+#' @param source_dem Path to source DEM raster
+#' @param source_gauge Path to gauge point
+#' @param res Target resolution (map units)
+#' @param stream_threshold Flow accumulation threshold for streams
+#' @param gauge_snap_dist Snap distance for gauge (map units)
+#' @param output_dir Output directory
+#' @param tmp_dir Temporary working directory
+#' @param plots Logical; show plots
+#' @param writeplots Logical; write plots to PDF
+#' @param overwrite Logical; overwrite outputs
 #' @export
 wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_threshold = 100, gauge_snap_dist = 90, output_dir, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
 
@@ -107,6 +119,13 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
 
 # ================================================================================
 # trim all maps to basin if needed
+#' Trim maps to basin extent
+#'
+#' @param maps Named list of map paths (includes basin, streams, DEM, optional gauge_snap)
+#' @param basin Path to basin raster
+#' @param output_dir Output directory
+#' @param plots Logical; show plots
+#' @param writeplots Logical; write plots to PDF
 #' @export
 wbox_trim_to_basin_overwrite = function(maps, basin, output_dir, plots = T, writeplots = T) {
   basin_rast = trim(rast(basin))
@@ -168,6 +187,16 @@ wbox_trim_to_basin_overwrite = function(maps, basin, output_dir, plots = T, writ
 
 # ================================================================================
 # get subbasins
+#' Delineate subbasins using Whitebox
+#'
+#' @param dem_brch Path to breached DEM raster
+#' @param streams Path to streams raster
+#' @param output_dir Output directory
+#' @param stream_threshold Flow accumulation threshold for streams
+#' @param tmp_dir Temporary working directory
+#' @param plots Logical; show plots
+#' @param writeplots Logical; write plots to PDF
+#' @param overwrite Logical; overwrite outputs
 #' @export
 wbox_subbasins = function(dem_brch, streams, output_dir, stream_threshold, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
 
@@ -186,6 +215,14 @@ wbox_subbasins = function(dem_brch, streams, output_dir, stream_threshold, tmp_d
 
 # ================================================================================
 # slope, aspect, horizon
+#' Compute slope, aspect, and horizons
+#'
+#' @param dem_brch Path to breached DEM raster
+#' @param output_dir Output directory
+#' @param tmp_dir Temporary working directory
+#' @param plots Logical; show plots
+#' @param writeplots Logical; write plots to PDF
+#' @param overwrite Logical; overwrite outputs
 #' @export
 wbox_slope_aspect_horizons = function(dem_brch, output_dir, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
 
@@ -235,6 +272,11 @@ wbox_slope_aspect_horizons = function(dem_brch, output_dir, tmp_dir = file.path(
 }
 
 # subbasin vis
+#' Visualize subbasins with leaflet
+#'
+#' @param subbasins Path to subbasins raster
+#' @param streams Path to streams raster
+#' @param min_subbasin_size Minimum subbasin size (ha)
 #' @export
 wbox_subbasins_vis = function(subbasins, streams, min_subbasin_size = 20) {
   r = rast(subbasins)
@@ -297,7 +339,9 @@ wbox_subbasins_vis = function(subbasins, streams, min_subbasin_size = 20) {
   return(tmp)
 }
 
-
+#' Get text location top left
+#' 
+#' @param srcmap SpatRaster map
 #' @export
 textlocTL = function(srcmap) {
   pct = 0.95
@@ -308,6 +352,16 @@ textlocTL = function(srcmap) {
 }
 
 
+#' Plot subbasins and streams
+#'
+#' @param subbasins Path to subbasins raster
+#' @param streams Path to streams raster
+#' @param output_dir Output directory
+#' @param stream_threshold Flow accumulation threshold for streams
+#' @param tmp_dir Temporary working directory
+#' @param plots Logical; show plots
+#' @param writeplots Logical; write plots to PDF
+#' @param overwrite Logical; overwrite outputs
 #' @export
 wbox_subbasins_plot = function(subbasins, streams, output_dir, stream_threshold, tmp_dir = file.path(output_dir, "wb_tmp"), plots = T, writeplots = T, overwrite = T) {
 
@@ -332,6 +386,16 @@ wbox_subbasins_plot = function(subbasins, streams, output_dir, stream_threshold,
   }
 }
 
+
+#' Derive USDA soil texture classes from sand/clay rasters
+#'
+#' @param basin SpatRaster or path to basin mask raster
+#' @param sand SpatRaster or path to sand percentage raster
+#' @param clay SpatRaster or path to clay percentage raster
+#' @param plot_out File path for optional PDF plot
+#' @param writeplots Logical; write PDF output
+#' @param plots Logical; show and/or generate plots
+#' @return SpatRaster of USDA soil texture class IDs
 #' @export
 polaris2texture = function(basin, sand, clay, plot_out, writeplots = TRUE, plots = TRUE) {
   fill.na <- function(x, i=5) {
@@ -395,6 +459,11 @@ polaris2texture = function(basin, sand, clay, plot_out, writeplots = TRUE, plots
   return(soil_texture)
 }
 
+#' Plot USDA soil texture map and table summary
+#'
+#' @param soil_texture SpatRaster of soil texture class IDs
+#' @param plot_out File path to write PDF plot
+#' @param writeplots Logical; write PDF output
 #' @export
 soil_texture_plot = function(soil_texture, plot_out, writeplots = T) {
   usdaID = data.frame(name = c("clay","silty-clay", "silty-clay-loam", "sandy-clay", "sandy-clay-loam", "clay-loam", "silt","silt-loam","loam","sand","loamy-sand","sandy-loam"),ID = c(1:12))

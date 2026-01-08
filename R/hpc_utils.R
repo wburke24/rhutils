@@ -1,7 +1,11 @@
 # hpc utils
 
+#' Format RHESSys run commands for HPC submission
+#'
+#' @param rhout Character vector of RHESSys commands
+#' @param name Label to include in the output filename
+#' @param rh_bin_replace Optional replacement RHESSys binary path
 #' @export
-# reformats for hpc, writes with unique datetime to scipts folder
 rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
   #---- for hpc and copying files
   rhout_str = unlist(rhout)
@@ -35,8 +39,14 @@ rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
   return(outfile)
 }
 
+#' List RHESSys input files required for a run
+#'
+#' @param input_rhessys RHESSys inputs list
+#' @param input_hdr Header list of definition files
+#' @param input_def_pars Definition parameter list
+#' @param input_tec_data Tec events data frame
+#' @param output_filter Output filter list
 #' @export
-# returns list of all files separated by types
 list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter) {
 
   outlist = list()
@@ -100,8 +110,22 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
   return(outlist)
 }
 
+#' Transfer RHESSys inputs and commands to pronghorn HPC
+#'
+#' @param rhout Character vector of RHESSys commands
+#' @param name Label for generated files
+#' @param rh_bin_replace Replacement RHESSys binary path on HPC
+#' @param dest Remote destination path
+#' @param usr Remote user (with hostname)
+#' @param input_rhessys RHESSys inputs list
+#' @param input_hdr Header list of definition files
+#' @param input_def_pars Definition parameter list
+#' @param input_tec_data Tec events data frame
+#' @param output_filter Output filter list
+#' @param filelist Optional precomputed file list
+#' @param transfer_method Transfer method (`"scp"` or `"rsync"`)
+#' @param rsa_loc Path to SSH key
 #' @export
-# AIO function for pronghorn using method of choice scp
 rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.5", dest, usr,
                                input_rhessys = NULL, input_hdr = NULL, input_def_pars = NULL, input_tec_data = NULL, output_filter = NULL,
                                filelist = NULL,
@@ -180,8 +204,10 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
   }
 }
 
+#' Collapse nested RHESSys input file lists
+#'
+#' @param filelist Nested list of RHESSys input files
 #' @export
-# check list of list of files and collapse to remove duplicate sublists and entries (from a loop of runs running list_rh_input_files())
 collapse_rh_input_files_list = function(filelist) {
   if ((is.list(filelist) & length(filelist)==10) & !is.list(filelist[[1]])) {
     stop("filelist is probably already correctly formatted for hpc functions")
@@ -197,8 +223,13 @@ collapse_rh_input_files_list = function(filelist) {
 }
 
 
+#' Test SSH connectivity to pronghorn via WSL
+#'
+#' @param user Remote user@host string
+#' @param key Path to SSH private key
+#' @param timeout Connection timeout in seconds
+#' @param remote_cmd Command to execute for the test
 #' @export
-# Test SSH to pronghorn via WSL using ~/rsa_key
 test_pronghorn_ssh <- function(user = "wburke@pronghorn.rc.unr.edu",
                               key = "~/rsa_key",
                               timeout = 10,

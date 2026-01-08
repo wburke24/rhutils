@@ -28,14 +28,14 @@
 #' @details
 #' - The function checks that output_dir exists; if it does not, the function
 #'   stops with an error.
-#' 
+#'
 #' - Parameter files (pattern \"*.params\") are moved into a \"params\" folder
 #'   inside the timestamped directory.
-#' 
+#'
 #' - Run metadata files are matched with pattern \"run_metadata_*.txt\"; if
 #'   multiple matches are found the file with the latest timestamp inferred
 #'   from its filename is moved.
-#' 
+#'
 #' - CSV files in the output_dir are moved into the created folder. If none
 #'   are found a message is printed and the created directory path is returned.
 #'
@@ -43,7 +43,14 @@
 #' @examples
 #' \dontrun{
 #' # Collect outputs into output/rh_out_<timestamp> and do not trigger alert
-#' collect_output(source_dir = "~/projects/my_run", basename = "run_", output_dir = "output", alert = FALSE)
+#' collect_output(
+#'  source_dir = "~/projects/my_run",
+#'  basename = "run_",
+#'  output_dir = "output",
+#'  alert = FALSE
+#' )
+#'
+#' 
 #'
 #' # Use current working directory and default names
 #' collect_output()

@@ -1,7 +1,7 @@
 #' plotpdf_allvars
 #' 
 #' Reads, aggregates, and plots all output variables to a pdf. Assumes output using output filters. Optionally can aggregate, create summary statistics, hide legend. Uses a pattern input to select one or many csv outputs in an output directory. Currently designed to work with basin scale output.
-#' @param our_dir Output directory to search for rhessys output files
+#' @param out_dir Output directory to search for rhessys output files
 #' @param out_name Base name of output pdf. Unique timedate is added to this string. If left null 'plots' is used.
 #' @param out_path Path to folder where pdf will be written. If doesn't exist, will be created.
 #' @param pattern Text pattern to use when searching for output files. Default is '_basin'.

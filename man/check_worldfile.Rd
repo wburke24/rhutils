@@ -6,6 +6,9 @@
 \usage{
 check_worldfile(worldfile)
 }
+\arguments{
+\item{worldfile}{Path to worldfile}
+}
 \description{
 Read in a worldfile and output key info on that worldfile.
 }

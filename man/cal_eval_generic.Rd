@@ -14,6 +14,21 @@ cal_eval_generic(
   agg_by = "mean"
 )
 }
+\arguments{
+\item{sim}{Simulated data data.frame}
+
+\item{obs}{Observed data data.frame}
+
+\item{compare_col}{Column name to compare}
+
+\item{eval_monthly}{Evaluate at monthly timestep (TRUE/FALSE)}
+
+\item{obs_is_monthly}{Observed data is monthly (TRUE/FALSE)}
+
+\item{echo_best}{Echo best run by NSE (TRUE/FALSE)}
+
+\item{agg_by}{Aggregation method ('mean' or 'sum')}
+}
 \description{
 Calculates calibration statistics: nse, lognse, pbias, rmse, and r2, at either daily or monthly.
 }

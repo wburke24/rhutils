@@ -1,6 +1,7 @@
 #' check_worldfile
 #'
 #' Read in a worldfile and output key info on that worldfile.
+#' @param worldfile Path to worldfile
 #' @export
 
 check_worldfile = function(worldfile) {

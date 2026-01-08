@@ -1,6 +1,10 @@
 # Utilities for plotting
 
 # ================================================================================
+#' Extract a legend grob from a ggplot object
+#'
+#' @param a.gplot A ggplot object
+#' @return A gtable containing the plot legend
 #' @export
 g_legend<-function(a.gplot){
   tmp <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(a.gplot))

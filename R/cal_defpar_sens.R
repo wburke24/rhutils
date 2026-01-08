@@ -1,6 +1,13 @@
 #' cal_defpar_sens
 #' 
 #' Sensetivity of of calibration evaluation statistics (NSE, NSElog, PBIAS, RMSE, r2) to changes in defintion file parameters.
+#' @param out_dir Output directory containing simulation results
+#' @param obs_source Path to observed data or data.frame
+#' @param input_def_pars Input definition parameters list
+#' @param monthly Use monthly aggregation (TRUE/FALSE)
+#' @param sortby Metric to sort by (NSE, NSElog, PBIAS, RMSE, r2)
+#' @param add_base Add base_flow to streamflow (TRUE/FALSE)
+#' @param def_changes_by_stat Output combined dataframe of parameters and stats (TRUE/FALSE)
 #' @export
 cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T, def_changes_by_stat = F) {
 

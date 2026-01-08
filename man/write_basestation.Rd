@@ -39,6 +39,71 @@ write_basestation(
   netcdf_var_was = "daily_mean_wind_speed"
 )
 }
+\arguments{
+\item{dest}{Destination path for basestation file}
+
+\item{year_start_index}{Year start index (default 1900)}
+
+\item{search_dist}{Location searching distance}
+
+\item{netcdf_var_x}{NetCDF variable name for x coordinate (default 'lon')}
+
+\item{netcdf_var_y}{NetCDF variable name for y coordinate (default 'lat')}
+
+\item{precip_multiplier}{Precipitation multiplier (default 0.001)}
+
+\item{rhum_multiplier}{Relative humidity multiplier (default 0.01)}
+
+\item{temp_unit}{Temperature unit (default 'K')}
+
+\item{IDs}{Grid cell IDs}
+
+\item{dem}{Digital elevation model}
+
+\item{lat}{Latitude values}
+
+\item{lon}{Longitude values}
+
+\item{x}{X coordinate values (optional)}
+
+\item{y}{Y coordinate values (optional)}
+
+\item{lai}{Leaf area index (default 3.0)}
+
+\item{screen_height}{Screen height (default 10.0)}
+
+\item{netcdf_tmax_filename}{NetCDF file for maximum temperature}
+
+\item{netcdf_var_tmax}{NetCDF variable name for maximum temperature}
+
+\item{netcdf_tmin_filename}{NetCDF file for minimum temperature}
+
+\item{netcdf_var_tmin}{NetCDF variable name for minimum temperature}
+
+\item{netcdf_rain_filename}{NetCDF file for precipitation}
+
+\item{netcdf_var_rain}{NetCDF variable name for precipitation}
+
+\item{netcdf_huss_filename}{NetCDF file for specific humidity (optional)}
+
+\item{netcdf_var_huss}{NetCDF variable name for specific humidity}
+
+\item{netcdf_rmax_filename}{NetCDF file for maximum relative humidity (optional)}
+
+\item{netcdf_var_rmax}{NetCDF variable name for maximum relative humidity}
+
+\item{netcdf_rmin_filename}{NetCDF file for minimum relative humidity (optional)}
+
+\item{netcdf_var_rmin}{NetCDF variable name for minimum relative humidity}
+
+\item{netcdf_rsds_filename}{NetCDF file for shortwave radiation (optional)}
+
+\item{netcdf_var_rsds}{NetCDF variable name for shortwave radiation}
+
+\item{netcdf_was_filename}{NetCDF file for wind speed (optional)}
+
+\item{netcdf_var_was}{NetCDF variable name for wind speed}
+}
 \description{
 write_basestation
 }

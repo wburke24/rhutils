@@ -1,7 +1,15 @@
 # preprocessing utils
 
+#' Plot preprocessing input maps to a PDF
+#'
+#' @param map_dir Directory containing input map rasters
+#' @param template Optional RHESSys template path for map metadata
+#' @param out_name Base filename for the PDF
+#' @param dest Output directory for the PDF
+#' @param map_exts Regex pattern of raster filename extensions
+#' @param pdfwidth PDF width in inches
+#' @param pdfheight PDF height in inches
 #' @export
-# plots the maps that you would input into rhessys preprocessing
 input_map_plotpdf <- function(
   map_dir,
   template = NULL,
@@ -59,8 +67,10 @@ input_map_plotpdf <- function(
   cat("Wrote pdf of map plots to ", pdfname, "\n")
 }
 
+#' Summarize RHESSys template contents
+#'
+#' @param template Path to RHESSys template file
 #' @export
-# prints a table and extra data on an input template
 check_template = function(template) {
   tempin = RHESSysPreprocessing::template_read(template = template)
   mapsin = tempin[[5]]
@@ -87,7 +97,13 @@ check_template = function(template) {
 }
 
 
-# fill missing map data
+#' Fill missing cells in a raster using neighboring values
+#'
+#' @param target_raster SpatRaster to fill
+#' @param mask_map SpatRaster mask defining valid area
+#' @param iterations Maximum fill iterations
+#' @param window Neighborhood window size (odd integer)
+#' @param fun Aggregation function for filling (`"mean"` or `"mode"`)
 #' @export
 fill_missing_raster_data = function(target_raster, mask_map, iterations = 1, window = 3, fun = "mean") {
   if (!(fun == "mean" | fun == "mode")) {
@@ -152,6 +168,9 @@ fill_missing_raster_data = function(target_raster, mask_map, iterations = 1, win
 }
 
 # Convert basin raster to utm grid id
+#' Determine UTM zone for basin raster
+#'
+#' @param basin SpatRaster basin mask
 #' @export
 basin2utm = function(basin) {
   if (!is.lonlat(basin)) {

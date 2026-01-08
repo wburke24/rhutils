@@ -1,5 +1,37 @@
 #' write_basestation
 #'
+#' @param dest Destination path for basestation file
+#' @param year_start_index Year start index (default 1900)
+#' @param search_dist Location searching distance
+#' @param netcdf_var_x NetCDF variable name for x coordinate (default 'lon')
+#' @param netcdf_var_y NetCDF variable name for y coordinate (default 'lat')
+#' @param precip_multiplier Precipitation multiplier (default 0.001)
+#' @param rhum_multiplier Relative humidity multiplier (default 0.01)
+#' @param temp_unit Temperature unit (default 'K')
+#' @param IDs Grid cell IDs
+#' @param dem Digital elevation model
+#' @param lat Latitude values
+#' @param lon Longitude values
+#' @param x X coordinate values (optional)
+#' @param y Y coordinate values (optional)
+#' @param lai Leaf area index (default 3.0)
+#' @param screen_height Screen height (default 10.0)
+#' @param netcdf_tmax_filename NetCDF file for maximum temperature
+#' @param netcdf_var_tmax NetCDF variable name for maximum temperature
+#' @param netcdf_tmin_filename NetCDF file for minimum temperature
+#' @param netcdf_var_tmin NetCDF variable name for minimum temperature
+#' @param netcdf_rain_filename NetCDF file for precipitation
+#' @param netcdf_var_rain NetCDF variable name for precipitation
+#' @param netcdf_huss_filename NetCDF file for specific humidity (optional)
+#' @param netcdf_var_huss NetCDF variable name for specific humidity
+#' @param netcdf_rmax_filename NetCDF file for maximum relative humidity (optional)
+#' @param netcdf_var_rmax NetCDF variable name for maximum relative humidity
+#' @param netcdf_rmin_filename NetCDF file for minimum relative humidity (optional)
+#' @param netcdf_var_rmin NetCDF variable name for minimum relative humidity
+#' @param netcdf_rsds_filename NetCDF file for shortwave radiation (optional)
+#' @param netcdf_var_rsds NetCDF variable name for shortwave radiation
+#' @param netcdf_was_filename NetCDF file for wind speed (optional)
+#' @param netcdf_var_was NetCDF variable name for wind speed
 #' @export
 
 write_basestation <- function(dest, year_start_index = 1900, search_dist, netcdf_var_x = "lon", netcdf_var_y = "lat",
@@ -21,7 +53,7 @@ write_basestation <- function(dest, year_start_index = 1900, search_dist, netcdf
     if (is.vector(X)) {
       return(X)
     }
-    if (class(X) == "SpatRaster") {
+    if (inherits(x,"SpatRaster")) {
       return(terra::values(X))
     }
     if (is.matrix(X)) {

@@ -2,6 +2,10 @@
 #'
 #' Takes either the paths to simulated and observed streamflow, or the dataframes/datatables themselves, and calculates
 #' nse, lognse, pbias, rmse, and r2, at either daily or monthly. Requires get_basin_daily from rhutils and the datatable packges.
+#' @param Qsim Simulated streamflow data or path to file
+#' @param Qobs Observed streamflow data or path to file
+#' @param monthly Use monthly aggregation (TRUE/FALSE)
+#' @param echo_best Echo best run by NSE (TRUE/FALSE)
 #' @export
 
 cal_eval = function(Qsim, Qobs, monthly = F, echo_best = T) {

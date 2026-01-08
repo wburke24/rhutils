@@ -1,6 +1,9 @@
 # data reading and aggregation utils
 
 # ================================================================================
+#' Load basin daily outputs
+#'
+#' @param out_dir Directory containing basin CSV outputs
 #' @export
 get_basin_daily = function(out_dir) {
   basin_files_in = list.files(path = out_dir, pattern = ".*_basin.*\\.csv$", full.names = T)
@@ -16,6 +19,9 @@ get_basin_daily = function(out_dir) {
 }
 
 # ================================================================================
+#' Aggregate basin daily outputs to monthly
+#'
+#' @param basin_daily Data table of daily basin outputs
 #' @export
 basin_daily2mn = function(basin_daily) {
   vars_in_basin = names(basin_daily)[!names(basin_daily) %in% c("day", "month", "year", "basinID", "date", "wy", "yd", "run")]
@@ -26,6 +32,9 @@ basin_daily2mn = function(basin_daily) {
 }
 
 # ================================================================================
+#' Apply fixes to basin outputs
+#'
+#' @param DT Data table of basin outputs
 #' @export
 basin_output_fixes = function(DT) {
   DT$date = lubridate::ymd(paste(DT$year, DT$month, DT$day, sep = "-"))
@@ -36,6 +45,9 @@ basin_output_fixes = function(DT) {
 }
 
 # ================================================================================
+#' Load stratum daily outputs
+#'
+#' @param out_dir Directory containing stratum CSV outputs
 #' @export
 get_stratum_daily = function(out_dir) {
   stratum_files_in = list.files(path = out_dir, pattern = ".*_stratum.*\\.csv$", full.names = T)
@@ -50,6 +62,9 @@ get_stratum_daily = function(out_dir) {
   return(stratum_daily_dt)
 }
 # ================================================================================
+#' Load patch daily outputs
+#'
+#' @param out_dir Directory containing patch CSV outputs
 #' @export
 get_patch_daily = function(out_dir) {
   patch_files_in = list.files(path = out_dir, pattern = ".*_patch.*\\.csv$", full.names = T)
@@ -66,6 +81,12 @@ get_patch_daily = function(out_dir) {
 
 # ================================================================================
 # AGGREGATION TO BE LAPPLY'D ACROSS OUTPUTS
+#' Aggregate dynamically by variables
+#'
+#' @param DT Data table to aggregate
+#' @param name Run identifier
+#' @param aggvars Grouping variables
+#' @param vars Variables to aggregate
 #' @export
 agg_dyn = function(DT, name, aggvars, vars) {
   out = DT[, lapply(.SD, mean), by=aggvars, .SDcols = vars]
@@ -76,6 +97,10 @@ agg_dyn = function(DT, name, aggvars, vars) {
 }
 
 # ================================================================================
+#' Aggregate by year-month
+#'
+#' @param X Data table to aggregate
+#' @param Y Run identifier
 #' @export
 agg_YM = function(X, Y) {
   vars <- names(X)[!names(X) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "wy", "yd", "run", "sID")]
@@ -87,6 +112,10 @@ agg_YM = function(X, Y) {
 }
 
 # ================================================================================
+#' Aggregate by year-month and strata
+#'
+#' @param X Data table to aggregate
+#' @param Y Run identifier
 #' @export
 agg_YM_strata = function(X, Y) {
   X[, sID := stratumID %% 10]

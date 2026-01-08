@@ -20,6 +20,8 @@ plotpdf_allvars(
 )
 }
 \arguments{
+\item{out_dir}{Output directory to search for rhessys output files}
+
 \item{out_name}{Base name of output pdf. Unique timedate is added to this string. If left null 'plots' is used.}
 
 \item{out_path}{Path to folder where pdf will be written. If doesn't exist, will be created.}
@@ -41,8 +43,6 @@ plotpdf_allvars(
 \item{auto_vars}{TRUE/FALSE to automatically generate relevent variables: evapotranspiration}
 
 \item{runs}{Optional vector of run IDs, to subset the total dataset. Defaults to NULL. May not work}
-
-\item{our_dir}{Output directory to search for rhessys output files}
 }
 \description{
 Reads, aggregates, and plots all output variables to a pdf. Assumes output using output filters. Optionally can aggregate, create summary statistics, hide legend. Uses a pattern input to select one or many csv outputs in an output directory. Currently designed to work with basin scale output.

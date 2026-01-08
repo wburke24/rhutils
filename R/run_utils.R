@@ -1,6 +1,9 @@
 # utils for running rhessys
 
 # ================================================================================
+#' Execute RHESSys commands in parallel
+#'
+#' @param run_cmds List of command strings to execute
 #' @export
 parallel_runs = function(run_cmds) {
   # run commands must be a list where each element is a rhessys run
