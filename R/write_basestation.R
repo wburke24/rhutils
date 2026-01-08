@@ -53,13 +53,14 @@ write_basestation <- function(dest, year_start_index = 1900, search_dist, netcdf
     if (is.vector(X)) {
       return(X)
     }
-    if (inherits(x,"SpatRaster")) {
+    if (inherits(X,"SpatRaster")) {
       return(terra::values(X))
     }
     if (is.matrix(X)) {
       return(c(t(X)))
     }
-    stop("Input data type isnt raster, matrix, vector, or NULL")
+    cat("Couldn't convert input data type:", class(X), "\n")
+    stop("Input data type isn't terra SpatRaster, matrix, vector, or NULL")
   }
 
   # vars_exist = rep(NA, 7)
