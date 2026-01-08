@@ -47,7 +47,7 @@ wbox_dem2streams_gauge_basin = function(source_dem, source_gauge, res, stream_th
     cat("Pour point cannot have attributes - writing temporary version for use with snap pour points.\n")
     v = vect(source_gauge)    
     v_geom <- vect(geom(v), crs = crs(v))  # keep CRS explicitly
-    writeVector(v_geom, file.path(tmp_dir, "pour_point_temp.shp"), overwrite = TRUE)
+    terra::writeVector(v_geom, file.path(tmp_dir, "pour_point_temp.shp"), overwrite = TRUE)
     source_gauge = file.path(tmp_dir, "pour_point_temp.shp")
   }
   
@@ -281,13 +281,13 @@ wbox_slope_aspect_horizons = function(dem_brch, output_dir, tmp_dir = file.path(
 wbox_subbasins_vis = function(subbasins, streams, min_subbasin_size = 20) {
   r = rast(subbasins)
   # r = terra::project(x = r, "EPSG:4326", method = "near")
-  v = as.polygons(r, round = F, values=T)
+  v = terra::as.polygons(r, round = F, values=T)
   v = terra::project(x = v, "EPSG:4326")
   v_sf <- st_as_sf(v)
   v_sf$AREA = st_area(x = v_sf)
 
   s = rast(streams)
-  sv = as.polygons(s, round = F, values=T)
+  sv = terra::as.polygons(s, round = F, values=T)
   sv = terra::project(x = sv, "EPSG:4326")
   sv_sf <- st_as_sf(sv)
   sv_sf$AREA = st_area(x = sv_sf)

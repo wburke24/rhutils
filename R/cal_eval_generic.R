@@ -69,7 +69,7 @@ cal_eval_generic = function(sim, obs, compare_col, eval_monthly = F, obs_is_mont
       stop("agg_by must be 'mean' or 'sum'.")
     }
     names(sim_mn) = c("run", "year", "month", compare_col)
-    sim_mn$yearmon = as.yearmon(paste(sim_mn$year, sim_mn$month), "%Y %m")
+    sim_mn$yearmon = zoo::as.yearmon(paste(sim_mn$year, sim_mn$month), "%Y %m")
     sim = sim_mn
     if (!obs_is_monthly) {
       obs$year = as.numeric(format(obs$date, "%Y"))
@@ -85,7 +85,7 @@ cal_eval_generic = function(sim, obs, compare_col, eval_monthly = F, obs_is_mont
       # obs_mn$yearmon = as.yearmon(paste(obs_mn$year, obs_mn$month), "%Y %m")
       obs = obs_mn
     }
-    obs$yearmon = as.yearmon(paste(obs$year, obs$month), "%Y %m")
+    obs$yearmon = zoo::as.yearmon(paste(obs$year, obs$month), "%Y %m")
 
     # ---------------- CLIP TO OVERLAP --------------------
     min_comb = max(min(sim$yearmon), min(obs$yearmon))

@@ -34,7 +34,7 @@ lpc_extract = function(lpc_data_path, lpc_pattern, mask_map_path, plots = F) {
   hc_in = terra::merge(sprc(hc_inlist))
   oc_in = terra::merge(sprc(oc_inlist))
   mask_map = rast(mask_map_path)
-  mask_vect = as.polygons(mask_map)
+  mask_vect = terra::as.polygons(mask_map)
   mask_proj = project(mask_vect, tc_in)
   # xmin West  xmax East  ymin North  ymax South
   if (any(ext(tc_in[[1]])[1] > ext(mask_proj)[1], ext(tc_in[[1]])[2] < ext(mask_proj)[2], 
