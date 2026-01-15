@@ -127,19 +127,6 @@ write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NUL
 
 #  Transform ================================================================================
 
-# makes a table from list - deprec
-# #' @export
-# get_param_table = function(input_def_pars) {
-#   vars_defs = data.frame(variable = sapply(input_def_pars, "[[", 2), def_file = sapply(input_def_pars, "[[", 1))
-#   if (length(input_def_pars[[1]][[3]]) == 1) {
-#     param_table = cbind(vars_defs, sapply(input_def_pars, "[[", 3))
-#   } else {
-#     param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
-#   }
-#   names(param_table)[3:length(param_table[1,])] = paste0("run_",c(1:(length(param_table[1,])-2)))
-#   return(param_table)
-# }
-
 # ================================================================================
 #' Convert defpar list to data frame
 #'
