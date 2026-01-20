@@ -33,7 +33,7 @@ output_doc = c("patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_
 output_doc_select = c("patch.soil_cs.totalc", "patch.soil_ns.totaln","patch.lai", "patch.totalc", "patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.soil_cs.DOC","patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC" )
 
 output_doc_carbon_many = c(
-  "patch.soil_cs.totalc", "patch.soil_ns.totaln","patch.lai", "patch.totalc","patch.total_stemc","stratum.cs.leafc", "stratum.cs.cpool", "patch.litter_cs.totalc", "patch.litter_ns.totaln","stratum.cs.live_crootc", "stratum.cs.dead_crootc", "stratum.cs.cwdc", "patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.soil_cs.DOC","patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC"
+  "patch.soil_cs.totalc", "patch.soil_ns.totaln","patch.lai", "patch.totalc","patch.total_stemc","stratum.cs.leafc", "stratum.cs.cpool", "patch.litter_cs.totalc", "patch.litter_ns.totaln","stratum.cs.live_crootc", "stratum.cs.dead_crootc", "stratum.cs.cwdc", "patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.soil_cs.DOC","patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC","patch.surface_DON", "patch.soil_ns.DON", "patch.streamflow_DON", "hill.gw.DON"
 )
 # "patch.cdf.do_soil1c_loss", "patch.cdf.do_soil2c_loss", "patch.cdf.do_soil3c_loss", "patch.cdf.do_soil4c_loss", "patch.cdf.do_litr1c_loss_bg", "patch.cdf.do_litr2c_loss_bg", "patch.cdf.do_litr3c_loss_bg", "patch.cdf.do_litr4c_loss_bg", "patch.ndf.do_litr1n_loss", "patch.ndf.pmnf_l1s1"
 
