@@ -6,6 +6,7 @@
 #' @param out_path Path to folder where pdf will be written. If doesn't exist, will be created.
 #' @param pattern Text pattern to use when searching for output files. Default is '_basin'.
 #' @param step Time step for plots. Only options are 'monthly' or 'yearly'.
+#' @param spatial_agg Optional spatial aggregation level. One of 'basin' (fully aggregated spatially), 'hill', 'zone', 'patch', 'stratum' (no spatial aggregation). If NULL (default) data is aggregated to basin.
 #' @param pdfwidth Width for output pdf in inches.
 #' @param pdfheight Height for output pdf in inches.
 #' @param hide_legend TRUE/FALSE if legend should be hidden in output plot.
@@ -21,6 +22,7 @@ plotpdf_allvars = function(out_dir,
                            out_path = "plots",
                            pattern = "_basin",
                            step = "monthly",
+                           spatial_agg = NULL,
                            pdfwidth = 7,
                            pdfheight = 7,
                            hide_legend = F,
@@ -56,6 +58,24 @@ plotpdf_allvars = function(out_dir,
   # Summary plot when runs are too many
   time_var <- if (step == "monthly") "year_month" else "year"
   time_var_nice <- if (step == "monthly") "Year - Month" else "Year"
+  # spatial aggreagation
+  if (!is.null(spatial_agg)) {
+    if (length(spatial_agg) != 1 | !any(spatial_agg %in% c("basin", "hill", "zone", "patch", "stratum"))) {
+      stop("spatial_agg must be only one of: 'basin', 'hill', 'zone', 'patch', 'stratum'")
+    }
+
+    sp_arg_all = c("basin", "hill", "zone", "patch", "stratum")
+    spag_all = c("basinID", "hillID", "zoneID", "patchID", "stratumID")
+    spatial_agg_vars = spag_all[1:which(sp_arg_all == spatial_agg)]
+    spatial_IDvar = spag_all[which(sp_arg_all == spatial_agg)]
+    spatial_var_nice = paste0(toupper(substring(as.character(spatial_agg), 1, 1)),substring(as.character(spatial_agg), 2))
+    
+    cat("Aggregating spatially by:", paste(spatial_agg, collapse = ", "), "\n")
+    aggvars = c(aggvars, spatial_agg_vars)
+  } else {
+    cat("Aggregating spatially to basin level.\n")
+  }
+
   # read data
   DT_l = lapply(files_in, fread)
   vars = names(DT_l[[1]])[!names(DT_l[[1]]) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "sID", "run")]
@@ -74,13 +94,19 @@ plotpdf_allvars = function(out_dir,
   if (!is.null(runs)) {
     DT = DT[DT$run %in% runs,]
   }
+
+  # get number of runs, do summary plots if too many runs
+  run_ct = length(unique(DT$run))
+
+  # if (run_ct == 1 & !is.null(spatial_agg)) {
+  #   DT$run = DT[[spatial_IDvar]]
+  #   run_ct = length(unique(DT$run))
+  # }
+
   
   # ======================================== PLOT & WRITE TO PDF ========================================
   pdfname = file.path(out_path, paste0(gsub(".pdf","", out_name),"_", format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".pdf"  ) )
   pdf(pdfname, width = pdfwidth, height = pdfheight)
-
-  # get number of runs, do summary plots if too many runs
-  run_ct = length(unique(DT$run))
 
   # ======================================== VAR LISTS - FOR CONVERSIONS AND LABELS ========================================
   # hydro vars to convert to mm
