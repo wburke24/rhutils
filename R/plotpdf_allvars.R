@@ -23,7 +23,7 @@ plotpdf_allvars = function(out_dir,
                            pattern = "_basin",
                            step = "monthly",
                            spatial_agg = NULL,
-                           pdfwidth = 7,
+                           pdfwidth = 10,
                            pdfheight = 7,
                            hide_legend = F,
                            summary_plots = F,
@@ -47,14 +47,15 @@ plotpdf_allvars = function(out_dir,
 
   # ======================================== READ + AGGREGATE DATA ========================================
   if (step == "monthly") {
-    aggvars = c("year", "month")
+    timevars = c("year", "month")
     cat("Aggregating to monthly.\n")
   } else if (step == "yearly") {
-    aggvars = c("year")
+    timevars = c("year")
     cat("Aggregating to yearly.\n")
   } else {
     stop("Only valid steps are 'monthly' or 'yearly'")
   }
+  aggvars = timevars
   # Summary plot when runs are too many
   time_var <- if (step == "monthly") "year_month" else "year"
   time_var_nice <- if (step == "monthly") "Year - Month" else "Year"
@@ -98,11 +99,18 @@ plotpdf_allvars = function(out_dir,
   # get number of runs, do summary plots if too many runs
   run_ct = length(unique(DT$run))
 
-  # if (run_ct == 1 & !is.null(spatial_agg)) {
-  #   DT$run = DT[[spatial_IDvar]]
-  #   run_ct = length(unique(DT$run))
-  # }
+  if (!is.null(spatial_agg)) {
+    if (spatial_agg == "stratum") {
+      # get last digit of stratumID as canopyID
+      DT$canopyID = as.numeric(substr(DT$stratumID, nchar(DT$stratumID), nchar(DT$stratumID)))
+      aggvars2= names(DT)[!names(DT) %in% c(vars, "basinID", "hillID", "zoneID", "patchID", "stratumID")]
 
+      DT = DT[, lapply(.SD, mean), by = aggvars2, .SDcols = vars]
+
+    } else {
+      stop("No handling for spatial levels other than basin and stratum when only one run is present.")
+    }
+  }
   
   # ======================================== PLOT & WRITE TO PDF ========================================
   pdfname = file.path(out_path, paste0(gsub(".pdf","", out_name),"_", format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".pdf"  ) )
@@ -214,18 +222,32 @@ plotpdf_allvars = function(out_dir,
 
     } else {
       # ======================================== STANDARD INDIVIDUAL RUN PLOTS ========================================
+      if (!is.null(spatial_agg) && spatial_agg == "stratum") {
+        tmpplot = ggplot(DT) +
+          aes(
+            x = .data[[time_var]],
+            y = .data[[vars[i]]],
+            color = as.factor(run),
+            linetype = as.factor(canopyID)
+          ) +
+          geom_line() +
+          ggtitle(vars[i]) +
+          xlab(time_var_nice) +
+          ylab(ylabel) +
+          labs(color = "Run", linetype = "Canopy ID")
+      } else {
       tmpplot = ggplot(DT) +
         aes(
           x = .data[[time_var]],
           y = .data[[vars[i]]],
-          color = as.factor(run),
-          linetype = as.factor(run)
+          color = as.factor(run)
         ) +
         geom_line() +
         ggtitle(vars[i]) +
         xlab(time_var_nice) +
         ylab(ylabel) +
-        labs(color = "Run", linetype = "Run")
+        labs(color = "Run")
+      }
     }
 
     # tmpplot
@@ -235,7 +257,7 @@ plotpdf_allvars = function(out_dir,
 
     # ==================== PLOT TO PDF ====================
     plot(tmpplot)
-  }
+    }
   
   # ==================== STOP GRAPHICAL OUTPUT TO PDF ====================
   suppressMessages(dev.off())
