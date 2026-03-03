@@ -140,6 +140,8 @@ plotpdf_allvars = function(out_dir,
   
   # ======================================== ITERATE THROUGH VARS ========================================
   for (i in seq_along(vars)) {
+    cat(paste0("Plotting variable: ",vars[i], " (",i," of ", length(vars),")\n") )
+
     if (vars[i] %in% output_vars_hydro) {
       ylabel = c("mm")
       DT[, (vars[i]) := get(vars[i]) * 1000]
@@ -168,7 +170,22 @@ plotpdf_allvars = function(out_dir,
 
       # ==================== GET MIN, MEAN, MAX RUNS ====================
       mean_byrun <- DT[, .(mean = mean(get(vars[i]), na.rm = TRUE)), by = run]
-      meanrun = mean_byrun[which.min( abs(mean_byrun$mean - mean(mean_byrun$mean, na.rm = T))) ,"run"]
+
+      # tmp = DT[, .(get(vars[i]))]
+      # length(tmp[[1]])
+      # sum(is.nan(tmp[[1]]))
+      # sum(is.infinite(tmp[[1]]))
+
+      mean_vals <- mean_byrun$mean
+      finite_idx <- is.finite(mean_vals)
+      if (any(finite_idx)) {
+        overall_mean <- mean(mean_vals[finite_idx], na.rm = TRUE)
+        abs_diff <- abs(mean_vals - overall_mean)
+        abs_diff[!is.finite(abs_diff)] <- Inf
+        meanrun <- mean_byrun[which.min(abs_diff), "run"]
+      } else {
+        meanrun <- mean_byrun[1, "run"]
+      }
       maxrun = mean_byrun[which.max(mean_byrun$mean) ,"run"]
       minrun = mean_byrun[which.min(mean_byrun$mean) ,"run"]
 
@@ -208,9 +225,9 @@ plotpdf_allvars = function(out_dir,
       lenv = max(DT[[value_col]], na.rm = T) - min(DT[[value_col]], na.rm = T)
       nudgev = lenv/40
 
-      textmean = paste0("Run ",stringr::str_extract(meanrun,"(?<=_)\\d+$") )
-      textmax = paste0("Run ",stringr::str_extract(maxrun,"(?<=_)\\d+$") )
-      textmin = paste0("Run ",stringr::str_extract(minrun,"(?<=_)\\d+$") )
+      textmean = paste0("Run ",stringr::str_extract(meanrun,"(?<=_|ID)\\d+$") )
+      textmax = paste0("Run ",stringr::str_extract(maxrun,"(?<=_|ID)\\d+$") )
+      textmin = paste0("Run ",stringr::str_extract(minrun,"(?<=_|ID)\\d+$") )
 
       # add labels to plot
       tmpplot = tmpplot +
