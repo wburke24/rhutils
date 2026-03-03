@@ -10,7 +10,8 @@ plotpdf_allvars(
   out_path = "plots",
   pattern = "_basin",
   step = "monthly",
-  pdfwidth = 7,
+  spatial_agg = NULL,
+  pdfwidth = 10,
   pdfheight = 7,
   hide_legend = F,
   summary_plots = F,
@@ -29,6 +30,8 @@ plotpdf_allvars(
 \item{pattern}{Text pattern to use when searching for output files. Default is '_basin'.}
 
 \item{step}{Time step for plots. Only options are 'monthly' or 'yearly'.}
+
+\item{spatial_agg}{Optional spatial aggregation level. One of 'basin' (fully aggregated spatially), 'hill', 'zone', 'patch', 'stratum' (no spatial aggregation). If NULL (default) data is aggregated to basin.}
 
 \item{pdfwidth}{Width for output pdf in inches.}
 
