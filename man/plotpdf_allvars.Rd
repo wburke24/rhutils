@@ -15,6 +15,7 @@ plotpdf_allvars(
   pdfheight = 7,
   hide_legend = F,
   summary_plots = F,
+  output_images = F,
   run_limit = 25,
   auto_vars = T,
   runs = NULL

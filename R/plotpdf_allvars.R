@@ -27,9 +27,12 @@ plotpdf_allvars = function(out_dir,
                            pdfheight = 7,
                            hide_legend = F,
                            summary_plots = F,
+                           output_images = F, # if TRUE, also outputs a foldfer of individual pngs for each variable in addition to the pdf
                            run_limit = 25,
                            auto_vars = T,
-                           runs = NULL) {
+                           runs = NULL
+                          ) {
+  
 
   # ======================================== FIND OUTPUT FILES ========================================
   cat("Finding all files matching: '",pattern,"' in dir: ",out_dir,"\n", sep="")
@@ -85,11 +88,28 @@ plotpdf_allvars = function(out_dir,
   DT = data.table::rbindlist(DT_l)
   # ==================== AUTOMATICALLY ADD VARS ====================
   if (auto_vars) {
-    if (all(c("evaporation","evaporation_surf","transpiration_unsat_zone","transpiration_sat_zone") %in% vars)) {
-      DT$evapotranspiration = DT$evaporation + DT$evaporation_surf +DT$transpiration_unsat_zone + DT$transpiration_sat_zone
+    # ----- EVAPOTRANSPIRATION -----
+    etvars =c("evaporation", "evaporation_surf","transpiration_unsat_zone", "transpiration_sat_zone")
+    if (all(etvars %in% vars)) {
+      DT$evapotranspiration = DT$evaporation +
+        DT$evaporation_surf +
+        DT$transpiration_unsat_zone +
+        DT$transpiration_sat_zone
       vars = c(vars, "evapotranspiration")
     }
+    # ----- STREAM SOLUTES -----
+    DOCvars = c("streamflow", "streamflow_DOC")
+    if (all(DOCvars %in% vars)) {
+      DT$stream_DOC_conc_ug_L = (DT$streamflow_DOC * 1000000) / DT$streamflow
+      vars = c(vars, "stream_DOC_conc_ug_L")
+    }
+    DONvars = c("streamflow", "streamflow_DON")
+    if (all(DONvars %in% vars)) {
+      DT$stream_DON_conc_ug_L = (DT$streamflow_DON * 1000000) / DT$streamflow
+      vars = c(vars, "stream_DON_conc_ug_L")
+    }
   }
+  
   
   # ==================== SUBSET RUNS ====================
   if (!is.null(runs)) {
@@ -281,3 +301,4 @@ plotpdf_allvars = function(out_dir,
 
   cat("Wrote plots to PDF file: ",pdfname)
 }
+  

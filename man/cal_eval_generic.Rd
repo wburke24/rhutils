@@ -7,7 +7,12 @@
 cal_eval_generic(
   sim,
   obs,
-  compare_col,
+  value_col,
+  sim_value_col = NULL,
+  obs_value_col = NULL,
+  date_col = "date",
+  sim_date_col = NULL,
+  obs_date_col = NULL,
   eval_monthly = F,
   obs_is_monthly = F,
   echo_best = T,
@@ -19,7 +24,17 @@ cal_eval_generic(
 
 \item{obs}{Observed data data.frame}
 
-\item{compare_col}{Column name to compare}
+\item{value_col}{Column name to compare (used for both sim and obs unless overridden)}
+
+\item{sim_value_col}{Column name in sim data to compare. Overrides `value_col` for sim if provided.}
+
+\item{obs_value_col}{Column name in obs data to compare. Overrides `value_col` for obs if provided.}
+
+\item{date_col}{Column name containing dates (used for both sim and obs unless overridden)}
+
+\item{sim_date_col}{Column name in sim data containing dates. Overrides `date_col` for sim if provided.}
+
+\item{obs_date_col}{Column name in obs data containing dates. Overrides `date_col` for obs if provided.}
 
 \item{eval_monthly}{Evaluate at monthly timestep (TRUE/FALSE)}
 
