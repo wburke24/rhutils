@@ -4,14 +4,17 @@
 #' Execute RHESSys commands in parallel
 #'
 #' @param run_cmds List of command strings to execute
+#' @param n_cores Number of cores to use for parallel execution
 #' @export
-parallel_runs = function(run_cmds) {
+parallel_runs = function(run_cmds, n_cores = NULL) {
   # run commands must be a list where each element is a rhessys run
   if (!is.list(run_cmds)) {
     stop("run_cmds must be a list of rhessys command line calls.\n")
   }
 
-  n_cores = max(1L, parallel::detectCores() - 1L)
+  if (is.null(n_cores)) {
+    n_cores = max(1L, parallel::detectCores() - 1L)
+  }
   cl = parallel::makeCluster(n_cores)
   parallel::clusterExport(cl = cl, varlist = c("run_cmds"), envir = environment())
   parallel::parLapply(cl = cl, X = seq_along(run_cmds), fun = function(X, run_cmds) { system(run_cmds[[X]])}, run_cmds = run_cmds)

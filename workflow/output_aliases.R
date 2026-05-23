@@ -1,8 +1,10 @@
 # output aliase
 #soils spinup
-output_vars_soils = c("patch.soil_cs.totalc", "patch.soil_cs.DOC", "patch.soil_ns.totaln", "patch.soil_ns.DON", "stratum.cs.net_psn", 
-                      "patch.sat_deficit", "patch.lai", "patch.totalc")
+output_vars_soil_nutrients = c("patch.soil_cs.totalc", "patch.soil_cs.DOC", "patch.soil_ns.totaln", "patch.soil_ns.DON")
 
+output_vars_soil_water = c("patch.rootzone.depth", "patch.rz_storage", "patch.unsat_storage", "patch.sat_deficit")
+
+# "patch.soil_cs.soil1c", "patch.soil_cs.soil2c", "patch.soil_cs.soil3c", "patch.soil_cs.soil4c", "patch.soil_ns.sminn", "patch.soil_ns.nitrate"
 output_vars_soils_debug = c("patch.soil_cs.totalc", "patch.soil_cs.DOC", "patch.soil_ns.totaln", "patch.soil_ns.DON", "stratum.cs.net_psn", "patch.sat_deficit", "patch.lai", 
                             "patch.totalc", "patch.evaporation","patch.evaporation_surf", "patch.transpiration_unsat_zone","patch.transpiration_sat_zone",  "stratum.cs.net_psn",
                             "patch.snowpack.water_equivalent_depth", "patch.rootzone.depth", "patch.gw_drainage", "patch.rz_storage", "patch.unsat_storage")
@@ -20,13 +22,15 @@ output_vars_waterbal = c("patch.evaporation","patch.evaporation_surf", "patch.ex
                          "stratum.Kstar_potential_both", "patch.total_water_in", "patch.litter.rain_stored", "hill.gw.storage","patch.canopy_rain_stored",
                          "patch.canopy_snow_stored")
 
+output_vars_ET = c("patch.evaporation", "patch.evaporation_surf", "patch.transpiration_unsat_zone", "patch.transpiration_sat_zone")
+
 output_vars_minimal = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "stratum.cs.net_psn", "patch.lai", "patch.totalc", "patch.evaporation", "patch.streamflow", "patch.snowpack.water_equivalent_depth", "patch.rootzone.depth", "patch.transpiration_unsat_zone", "patch.transpiration_sat_zone")
 
 output_vars_interest = c("stratum.cs.net_psn", "patch.sat_deficit", "patch.lai", "patch.totalc", "patch.evaporation", "patch.streamflow")
 
-output_cpools = c("stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "stratum.cs.live_crootc", "stratum.cs.dead_crootc", "stratum.cs.frootc", "stratum.cs.cwdc", "stratum.cs.cwdc_bg", "stratum.cs.gresp_transfer","stratum.cs.gresp_store")
+output_carbon_stratum = c("stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "stratum.cs.live_crootc", "stratum.cs.dead_crootc", "stratum.cs.frootc", "stratum.cs.cwdc", "stratum.cs.cwdc_bg", "stratum.cs.gresp_transfer","stratum.cs.gresp_store")
 
-output_carbon_all = c(output_cpools, "patch.litter_cs.totalc")
+output_carbon_all = c(output_carbon_stratum, "patch.litter_cs.totalc")
 
 output_doc = c("patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.surface_DOC_Qin", "patch.surface_DOC_Qout", "patch.soil_cs.DOC","patch.soil_cs.DOC_Qin","patch.soil_cs.DOC_Qout", "patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
 

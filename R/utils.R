@@ -298,3 +298,25 @@ find_open_most_recent <- function(dir, pattern) {
   browseURL(most_recent_file)
   return(most_recent_file)
 }
+
+
+#' Find the most recent output directory matching a pattern
+#'
+#' @param basedir Base directory to search for output directories
+#' @param pattern Optional pattern to filter directories
+#' @export
+find_most_recent_output_dir = function(basedir = "output", pattern = NULL) {
+  alldirs = list.dirs(basedir, full.names = T, recursive = F)
+  if (!is.null(pattern)) {
+    alldirs = alldirs[grepl(pattern, alldirs)]
+  }
+  if (length(alldirs) == 0) {
+    cat("No directories found in ", basedir, " with pattern ", pattern, ".\n", sep = "")
+    return(NULL)
+  }  
+  dir_info = file.info(alldirs)
+  most_recent_dir = rownames(dir_info)[which.max(dir_info$ctime)]
+  cat("Most recent directory in ", basedir, " with pattern ", pattern, ": ", most_recent_dir, "\n", sep = "")
+  cat("Directory creation time: ", as.character(dir_info$ctime[which.max(dir_info$ctime)]), "\n", sep = "")
+  return(most_recent_dir)
+}

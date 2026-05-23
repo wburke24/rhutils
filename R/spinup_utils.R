@@ -7,16 +7,13 @@
 #' @param world Worldfile data frame
 #' @export
 world_add_level_i = function(world) {
-  # add numeric level col
-  world$level_i = world$level
-  l = c("world","basin","hillslope","zone","patch","canopy_strata")
-  li = c(1,2,3,4,5,6)
-  world[.(from = l, to = li), on = paste0("level_i", "==from"), ("level_i") := i.to]
-  world$level_i = as.numeric(world$level_i)
+  l = c("world", "basin", "hillslope", "zone", "patch", "canopy_strata")
+  li = c(1, 2, 3, 4, 5, 6)
+  level_map <- setNames(li, l)
+  world$level_i <- unname(level_map[world$level])
   world$i = 1:length(world$vars)
   return(world)
 }
-
 # add vegparmID col to worldfile dataframe - IF there are more than 1 strata, vegID is only or strata level
 #' Add patch-level vegetation parameter identifiers
 #'
@@ -361,8 +358,8 @@ new_world_from_spun_worlds = function(spun_world_paths, original_world_path, ID 
       stop("Not all rule_IDs in destination world are present in spun worlds")
     }
   } else {
-    vegparm = unique(world_dest$vegparm[!is.na(world_dest$vegparm)])
-    vegparm_spun = sapply(worlds_spun, function(X) unique(X$vegparm[!is.na(X$vegparm)]))
+    vegparm = unique(world_dest$veg_parm_ID[!is.na(world_dest$veg_parm_ID)])
+    vegparm_spun = sapply(worlds_spun, function(X) unique(X$veg_parm_ID[!is.na(X$veg_parm_ID)]))
     if (!all(vegparm %in% vegparm_spun)) {
       stop("Not all veg_parm_IDs in destination world are present in spun worlds")
     }
@@ -382,8 +379,8 @@ new_world_from_spun_worlds = function(spun_world_paths, original_world_path, ID 
     world_new = merge(world_dest, l, by = c("rule_ID", "veg_parm_ID", "vars"), all.x = T, suffixes = c("", ".spun"), sort = F)
   } else {
     l = rbindlist(worlds_spun)
-    l = l[vars %in% c(soil_vars) & !is.na(vegparm), .(vegparm, vars, values)]
-    world_new = merge(world_dest, l, by = c("vegparm", "vars"), all.x = T, suffixes = c("", ".spun"), sort = F)
+    l = l[vars %in% c(soil_vars) & !is.na(veg_parm_ID), .(veg_parm_ID, vars, values)]
+    world_new = merge(world_dest, l, by = c("veg_parm_ID", "vars"), all.x = T, suffixes = c("", ".spun"), sort = F)
   }
 
   world_new[!is.na(values.spun), values := values.spun]

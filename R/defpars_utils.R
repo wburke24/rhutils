@@ -406,7 +406,7 @@ def_par_allcomb = function(defpars) {
   pars_comb = expand.grid(pars_mult, stringsAsFactors = F)
   defpars[npars>1] = mapply(function(X, Y) {X[[3]] = Y; return(X)}, defpars[npars>1], pars_comb, SIMPLIFY = F)
   defpars[npars==1] = lapply(defpars[npars==1], function(X, Y) {X[[3]] = rep.int(X[[3]], Y); return(X)}, length(pars_comb[[1]]))
-  cat("Output def pars length: ", length(pars_comb[[1]]))
+  cat("Output def pars length: ", length(pars_comb[[1]]), "\n")
   return(defpars)
 }
 
@@ -641,4 +641,40 @@ pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_table
 
   dev.off()
   cat("Wrote output tables to pdf:",output_path,"\n")
+}
+
+# compare different parameters - wrapper around compare_params
+#' @export
+compare_params_difference_table = function(a, b, rh_construct_default_file) {
+  comp = compare_params(a = a, b = b, rh_construct_default_file = rh_construct_default_file)
+  pars = comp[comp$different_pars, ]
+  # replace column 2 and 3 NAs with column 4 values
+  if (any(is.na(pars[,2]))) {
+    pars[is.na(pars[,2]),2] = pars[is.na(pars[,2]),4]
+  }
+  if (any(is.na(pars[,3]))) {
+    pars[is.na(pars[,3]),3] = pars[is.na(pars[,3]),4]
+  }
+
+  pars$diff = abs(as.numeric(pars[,2]) - as.numeric(pars[,3]))
+  pars$mean = apply(data.frame(a = as.numeric(pars[,2]), b = as.numeric(pars[,3])), 1, mean)
+  pars$pct_chg = signif(pars$diff/pars$mean, 2)*100
+
+  # print table
+  knitr::kable(pars[order(pars$pct_chg, decreasing = T),], )
+  # table as figure?
+  return(pars)
+}
+
+# convert comparison data frame to list for input into ioinR functions
+#' @export
+defpar_comparedf_2list = function(comparedf, def_file) {
+  pars_list = list()
+  for (i in 1:nrow(comparedf)) {
+    par_name = comparedf[i,1]
+    par_a = comparedf[i,2]
+    par_b = comparedf[i,3]
+    pars_list[[i]] = list("Def_file" = def_file, "Variable" = par_name, "Value" = c(par_a, par_b))
+  }
+  return(pars_list)
 }

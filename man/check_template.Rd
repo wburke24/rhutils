@@ -4,10 +4,12 @@
 \alias{check_template}
 \title{Summarize RHESSys template contents}
 \usage{
-check_template(template)
+check_template(template, map_dir = NULL)
 }
 \arguments{
 \item{template}{Path to RHESSys template file}
+
+\item{map_dir}{Optional directory containing input map rasters to check they exist}
 }
 \description{
 Summarize RHESSys template contents

@@ -243,3 +243,182 @@ extract_hillslope_from_world = function(world, hillslope_id) {
 
   return(filtered_world)
 }
+
+# read_world = function (worldfile, hill_col = F, zone_col = F, patch_col = F) 
+# {
+#     read_world = readLines(worldfile, warn = FALSE, encoding = "UTF-8")
+#     read_world = read_world[nchar(read_world) > 0]
+#     world = strsplit(trimws(read_world), "\\s+")
+#     world = data.frame(matrix(unlist(world), nrow = length(world), 
+#         byrow = T), stringsAsFactors = FALSE)
+#     names(world) = c("values", "vars")
+#     idvars = c("world_ID", "basin_ID", "hillslope_ID", "zone_ID", 
+#         "patch_ID", "canopy_strata_ID")
+#     if (any(!idvars %in% world$vars)) {
+#         missingid = idvars[!idvars %in% world$vars]
+#         stop("Missing or incorrect ID vars in the world file:", 
+#             missingid)
+#     }
+#     index_all = which(world$vars == "world_ID" | world$vars == 
+#         "basin_ID" | world$vars == "hillslope_ID" | world$vars == 
+#         "zone_ID" | world$vars == "patch_ID" | world$vars == 
+#         "canopy_strata_ID")
+#     index_names = gsub("_ID", "", x = world$vars[index_all])
+#     index_max = c(index_all[2:length(index_all)] - 1, length(world$vars))
+#     testing = F
+#     if (testing) {
+#         tmp = unname(unlist(mapply(rep, index_names, (index_max - 
+#             index_all) + 1)))
+#         length(tmp)
+#         head(tmp, 30)
+#     }
+#     world$level = unname(unlist(mapply(rep, index_names, (index_max - 
+#         index_all) + 1)))
+#     world$ID = unname(unlist(mapply(rep, world$values[index_all], 
+#         (index_max - index_all) + 1)))
+#     if (hill_col) {
+#         index_hill = which(world$vars == "hillslope_ID")
+#         if (length(index_hill) > 1) {
+#             index_hill_max = c(index_hill[2:length(index_hill)] - 
+#                 1, length(world$vars))
+#         }
+#         else {
+#             index_hill_max = length(world$vars)
+#         }
+#         world$hillslope_ID = c(rep(NA, index_hill[1] - 1), unname(unlist(mapply(rep, 
+#             world$values[index_hill], (index_hill_max - index_hill) + 
+#                 1))))
+#     }
+#     if (zone_col) {
+#         index_zone = which(world$vars == "zone_ID")
+#         if (length(index_zone) > 1) {
+#             index_zone_max = c(index_zone[2:length(index_zone)] - 
+#                 1, length(world$vars))
+#         }
+#         else {
+#             index_zone_max = length(world$vars)
+#         }
+#         world$zone_ID = c(rep(NA, index_zone[1] - 1), unname(unlist(mapply(rep, 
+#             world$values[index_zone], (index_zone_max - index_zone) + 
+#                 1))))
+#         world$zone_ID[world$level %in% c("basin", "hillslope")] = NA
+#     }
+#     if (patch_col) {
+#         index_patch = which(world$vars == "patch_ID")
+#         if (length(index_patch) > 1) {
+#             index_patch_max = c(index_patch[2:length(index_patch)] - 
+#                 1, length(world$vars))
+#         }
+#         else {
+#             index_patch_max = length(world$vars)
+#         }
+#         world$patch_ID = c(rep(NA, index_patch[1] - 1), unname(unlist(mapply(rep, 
+#             world$values[index_patch], (index_patch_max - index_patch) + 
+#                 1))))
+#         world$patch_ID[world$level %in% c("basin", "hillslope", 
+#             "zone")] = NA
+#     }
+#     world$unique_ID = unname(unlist(mapply(rep, c(1:length(index_names)), 
+#         (index_max - index_all) + 1)))
+#     return(world)
+# }
+
+# ================================================================================
+#' Read stratum veg IDs and hierarchy IDs from a worldfile
+#'
+#' Fast parser for RHESSys worldfiles that extracts only the hierarchy IDs
+#' (`basin_ID`, `hillslope_ID`, `zone_ID`, `patch_ID`, `canopy_strata_ID`) and
+#' `veg_parm_ID`, returning one row per stratum (`veg_parm_ID` line).
+#'
+#' This avoids constructing the full world table and is substantially faster and
+#' lower-memory than `read_world()` for this specific use case.
+#'
+#' @param worldfile Path to a RHESSys worldfile.
+#'
+#' @return A data frame with columns: `basin_ID`, `hillslope_ID`, `zone_ID`,
+#'   `patch_ID`, `stratum_ID`, `veg_parm_ID`.
+#' @export
+read_world_strata_veg_parm_IDs = function(worldfile) {
+  read_world = readLines(worldfile, warn = FALSE, encoding = "UTF-8")
+  read_world = trimws(read_world)
+  read_world = read_world[nchar(read_world) > 0]
+
+  vars = sub(".*\\s+", "", read_world, perl = TRUE)
+  values = sub("\\s+\\S+$", "", read_world, perl = TRUE)
+
+  keep_vars = c("basin_ID", "hillslope_ID", "zone_ID", "patch_ID", "canopy_strata_ID", "veg_parm_ID")
+  keep_ind = vars %in% keep_vars
+  vars = vars[keep_ind]
+  values = values[keep_ind]
+
+  reqvars = c("basin_ID", "hillslope_ID", "zone_ID", "patch_ID", "canopy_strata_ID")
+  if (any(!reqvars %in% vars)) {
+    missingid = reqvars[!reqvars %in% vars]
+    stop("Missing or incorrect ID vars in the world file:", paste(missingid, collapse = ", "))
+  }
+
+  n_veg = sum(vars == "veg_parm_ID")
+  basin_out = character(n_veg)
+  hill_out = character(n_veg)
+  zone_out = character(n_veg)
+  patch_out = character(n_veg)
+  strata_out = character(n_veg)
+  veg_out = character(n_veg)
+
+  basin_ID = NA_character_
+  hillslope_ID = NA_character_
+  zone_ID = NA_character_
+  patch_ID = NA_character_
+  stratum_ID = NA_character_
+
+  out_i = 0L
+  for (i in seq_along(vars)) {
+    var_i = vars[i]
+    val_i = values[i]
+
+    if (var_i == "basin_ID") {
+      basin_ID = val_i
+    } else if (var_i == "hillslope_ID") {
+      hillslope_ID = val_i
+    } else if (var_i == "zone_ID") {
+      zone_ID = val_i
+    } else if (var_i == "patch_ID") {
+      patch_ID = val_i
+    } else if (var_i == "canopy_strata_ID") {
+      stratum_ID = val_i
+    } else if (var_i == "veg_parm_ID") {
+      out_i = out_i + 1L
+      basin_out[out_i] = basin_ID
+      hill_out[out_i] = hillslope_ID
+      zone_out[out_i] = zone_ID
+      patch_out[out_i] = patch_ID
+      strata_out[out_i] = stratum_ID
+      veg_out[out_i] = val_i
+    }
+  }
+
+  out = data.frame(
+    basin_ID = basin_out,
+    hillslope_ID = hill_out,
+    zone_ID = zone_out,
+    patch_ID = patch_out,
+    stratum_ID = strata_out,
+    veg_parm_ID = veg_out,
+    stringsAsFactors = FALSE
+  )
+
+  out$basin_ID = as.numeric(out$basin_ID)
+  out$hillslope_ID = as.numeric(out$hillslope_ID)
+  out$zone_ID = as.numeric(out$zone_ID)
+  out$patch_ID = as.numeric(out$patch_ID)
+  out$stratum_ID = as.numeric(out$stratum_ID)
+
+  return(out)
+}
+
+# out = read_world_strata_veg_parm_IDs(worldfile)
+
+# source("c:/Users/burke/Documents/Repos/rhutils/R/worldfile_utils.R")
+# worldfile = "../../PNW/GateCreek/worldfiles/Gatecreek_stable_v3.world"
+
+# fast = system.time(invisible(read_world_strata_veg_parm_IDs(worldfile)))["elapsed"]

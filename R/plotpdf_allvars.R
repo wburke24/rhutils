@@ -7,6 +7,7 @@
 #' @param pattern Text pattern to use when searching for output files. Default is '_basin'.
 #' @param step Time step for plots. Only options are 'monthly' or 'yearly'.
 #' @param spatial_agg Optional spatial aggregation level. One of 'basin' (fully aggregated spatially), 'hill', 'zone', 'patch', 'stratum' (no spatial aggregation). If NULL (default) data is aggregated to basin.
+#' @param worldfile Optional worldfile for veg ID spatial aggregation, required if spatial_agg is not null and set to veg_parm_ID.
 #' @param pdfwidth Width for output pdf in inches.
 #' @param pdfheight Height for output pdf in inches.
 #' @param hide_legend TRUE/FALSE if legend should be hidden in output plot.
@@ -23,6 +24,7 @@ plotpdf_allvars = function(out_dir,
                            pattern = "_basin",
                            step = "monthly",
                            spatial_agg = NULL,
+                           worldfile = NULL, # optional worldfile for veg ID spatial aggregation, required if spatial_agg is not null
                            pdfwidth = 10,
                            pdfheight = 7,
                            hide_legend = F,
@@ -33,6 +35,19 @@ plotpdf_allvars = function(out_dir,
                            runs = NULL
                           ) {
   
+  # =========================== CHECKS ========================================
+  if (!dir.exists(out_dir)) {
+    stop("Output directory does not exist: ", out_dir)
+  }
+  if (!is.null(spatial_agg) && spatial_agg == "veg_parm_ID" && is.null(worldfile)) {
+    stop("If spatial_agg is set to 'veg_parm_ID', a worldfile must be provided.")
+  }
+  if (!is.null(spatial_agg) && spatial_agg == "veg_parm_ID") {
+    worldIDs = read_world_strata_veg_parm_IDs(worldfile)
+    if (nrow(worldIDs) == 0) {
+      stop("No valid worldIDs found in worldfile: ", worldfile)
+    }
+  }
 
   # ======================================== FIND OUTPUT FILES ========================================
   cat("Finding all files matching: '",pattern,"' in dir: ",out_dir,"\n", sep="")
@@ -64,16 +79,20 @@ plotpdf_allvars = function(out_dir,
   time_var_nice <- if (step == "monthly") "Year - Month" else "Year"
   # spatial aggreagation
   if (!is.null(spatial_agg)) {
-    if (length(spatial_agg) != 1 | !any(spatial_agg %in% c("basin", "hill", "zone", "patch", "stratum"))) {
-      stop("spatial_agg must be only one of: 'basin', 'hill', 'zone', 'patch', 'stratum'")
+    if (length(spatial_agg) != 1 | !any(spatial_agg %in% c("basin", "hill", "zone", "patch", "stratum", "veg_parm_ID"))) {
+      stop("spatial_agg must be only one of: 'basin', 'hill', 'zone', 'patch', 'stratum', 'veg_parm_ID'")
+    } 
+    if (any(spatial_agg %in% c("basin", "hill", "zone", "patch", "stratum"))) {
+      sp_arg_all = c("basin", "hill", "zone", "patch", "stratum")
+      spag_all = c("basinID", "hillID", "zoneID", "patchID", "stratumID")
+      spatial_agg_vars = spag_all[1:which(sp_arg_all == spatial_agg)]
+      spatial_IDvar = spag_all[which(sp_arg_all == spatial_agg)]
+      spatial_var_nice = paste0(toupper(substring(as.character(spatial_agg), 1, 1)),substring(as.character(spatial_agg), 2))
+    } else if (spatial_agg == "veg_parm_ID") {
+      spatial_agg_vars = "veg_parm_ID"
+      spatial_IDvar = "veg_parm_ID"
+      spatial_var_nice = "Vegetation ID"
     }
-
-    sp_arg_all = c("basin", "hill", "zone", "patch", "stratum")
-    spag_all = c("basinID", "hillID", "zoneID", "patchID", "stratumID")
-    spatial_agg_vars = spag_all[1:which(sp_arg_all == spatial_agg)]
-    spatial_IDvar = spag_all[which(sp_arg_all == spatial_agg)]
-    spatial_var_nice = paste0(toupper(substring(as.character(spatial_agg), 1, 1)),substring(as.character(spatial_agg), 2))
-    
     cat("Aggregating spatially by:", paste(spatial_agg, collapse = ", "), "\n")
     aggvars = c(aggvars, spatial_agg_vars)
   } else {
@@ -82,7 +101,12 @@ plotpdf_allvars = function(out_dir,
 
   # read data
   DT_l = lapply(files_in, fread)
-  vars = names(DT_l[[1]])[!names(DT_l[[1]]) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "date", "sID", "run")]
+  vars = names(DT_l[[1]])[!names(DT_l[[1]]) %in% c("day", "month", "year", "basinID", "hillID", "zoneID", "patchID", "stratumID", "veg_parm_ID", "date", "sID", "run")]
+  if (!is.null(spatial_agg) && spatial_agg == "veg_parm_ID") {
+    DT_l = lapply(DT_l, function(DT) {
+      DT = merge(DT, worldIDs, by.x = c("basinID", "hillID", "zoneID", "patchID", "stratumID"), by.y = c("basin_ID", "hillslope_ID", "zone_ID", "patch_ID", "stratum_ID"), all.x = T)
+    })
+  }
   # uses dynamic aggregation function
   DT_l = mapply(agg_dyn, DT_l, names, MoreArgs = list(aggvars = aggvars, vars = vars), SIMPLIFY = F)
   DT = data.table::rbindlist(DT_l)
@@ -110,7 +134,6 @@ plotpdf_allvars = function(out_dir,
     }
   }
   
-  
   # ==================== SUBSET RUNS ====================
   if (!is.null(runs)) {
     DT = DT[DT$run %in% runs,]
@@ -124,12 +147,8 @@ plotpdf_allvars = function(out_dir,
       # get last digit of stratumID as canopyID
       DT$canopyID = as.numeric(substr(DT$stratumID, nchar(DT$stratumID), nchar(DT$stratumID)))
       aggvars2= names(DT)[!names(DT) %in% c(vars, "basinID", "hillID", "zoneID", "patchID", "stratumID")]
-
       DT = DT[, lapply(.SD, mean), by = aggvars2, .SDcols = vars]
-
-    } else {
-      stop("No handling for spatial levels other than basin and stratum when only one run is present.")
-    }
+    } 
   }
   
   # ======================================== PLOT & WRITE TO PDF ========================================
@@ -272,6 +291,19 @@ plotpdf_allvars = function(out_dir,
           xlab(time_var_nice) +
           ylab(ylabel) +
           labs(color = "Run", linetype = "Canopy ID")
+      } else if (!is.null(spatial_agg) && spatial_agg == "veg_parm_ID") {
+        tmpplot = ggplot(DT) +
+          aes(
+            x = .data[[time_var]],
+            y = .data[[vars[i]]],
+            color = as.factor(run),
+            linetype = as.factor(veg_parm_ID)
+          ) +
+          geom_line() +
+          ggtitle(vars[i]) +
+          xlab(time_var_nice) +
+          ylab(ylabel) +
+          labs(color = "Run", linetype = "Veg Parm ID")
       } else {
       tmpplot = ggplot(DT) +
         aes(

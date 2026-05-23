@@ -70,10 +70,24 @@ input_map_plotpdf <- function(
 #' Summarize RHESSys template contents
 #'
 #' @param template Path to RHESSys template file
+#' @param map_dir Optional directory containing input map rasters to check they exist
 #' @export
-check_template = function(template) {
+check_template = function(template, map_dir = NULL) {
   tempin = RHESSysPreprocessing::template_read(template = template)
   mapsin = tempin[[5]]
+
+  if (!is.null(map_dir)) {
+    map_paths <- list.files(path = map_dir, pattern = c(".tif|.tiff"), full.names = T)
+    map_names = basename(map_paths)
+
+    missing_maps = mapsin[!mapsin[, 2] %in% map_names, 2]
+    if (length(missing_maps) > 0) {
+      cat("WARNING: The following maps specified in the template were not found in the map directory:\n")
+      print(missing_maps)
+    } else {
+      cat("All maps specified in the template were found in the map directory.\n")
+    }
+  }
   
   cat("==================================================\n")
   cat("============ Summary of Template File ============\n")

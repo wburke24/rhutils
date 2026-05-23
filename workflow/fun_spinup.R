@@ -3,12 +3,10 @@
 
 # add level index to worldfile dataframe
 world_add_level_i = function(world) {
-  # add numeric level col
-  world$level_i = world$level
-  l = c("world","basin","hillslope","zone","patch","canopy_strata")
-  li = c(1,2,3,4,5,6)
-  world[.(from = l, to = li), on = paste0("level_i", "==from"), ("level_i") := i.to]
-  world$level_i = as.numeric(world$level_i)
+  l = c("world", "basin", "hillslope", "zone", "patch", "canopy_strata")
+  li = c(1, 2, 3, 4, 5, 6)
+  level_map <- setNames(li, l)
+  world$level_i <- unname(level_map[world$level])
   world$i = 1:length(world$vars)
   return(world)
 }

@@ -11,6 +11,7 @@ plotpdf_allvars(
   pattern = "_basin",
   step = "monthly",
   spatial_agg = NULL,
+  worldfile = NULL,
   pdfwidth = 10,
   pdfheight = 7,
   hide_legend = F,
@@ -33,6 +34,8 @@ plotpdf_allvars(
 \item{step}{Time step for plots. Only options are 'monthly' or 'yearly'.}
 
 \item{spatial_agg}{Optional spatial aggregation level. One of 'basin' (fully aggregated spatially), 'hill', 'zone', 'patch', 'stratum' (no spatial aggregation). If NULL (default) data is aggregated to basin.}
+
+\item{worldfile}{Optional worldfile for veg ID spatial aggregation, required if spatial_agg is not null and set to veg_parm_ID.}
 
 \item{pdfwidth}{Width for output pdf in inches.}
 

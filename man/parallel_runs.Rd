@@ -4,10 +4,12 @@
 \alias{parallel_runs}
 \title{Execute RHESSys commands in parallel}
 \usage{
-parallel_runs(run_cmds)
+parallel_runs(run_cmds, n_cores = NULL)
 }
 \arguments{
 \item{run_cmds}{List of command strings to execute}
+
+\item{n_cores}{Number of cores to use for parallel execution}
 }
 \description{
 Execute RHESSys commands in parallel
