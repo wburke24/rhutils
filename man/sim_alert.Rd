@@ -4,14 +4,27 @@
 \alias{sim_alert}
 \title{Play a visual and audio alert when simulations complete}
 \usage{
-sim_alert(txt = "Simulations Complete", fg = 46, bg = 24)
+sim_alert(
+  txt = "Simulations Complete",
+  fg = 231,
+  bg = 55,
+  beeptype = 2,
+  beepct = 1,
+  quiet = F
+)
 }
 \arguments{
-\item{txt}{Message to display}
+\item{txt}{Message to display (supports multiple lines with \n)}
 
 \item{fg}{Foreground ANSI color code}
 
 \item{bg}{Background ANSI color code}
+
+\item{beeptype}{Type of beep sound (see `beepr::beep` for options)}
+
+\item{beepct}{Number of times to beep}
+
+\item{quiet}{Logical; if TRUE, suppresses visual and audio alerts}
 }
 \description{
 Play a visual and audio alert when simulations complete

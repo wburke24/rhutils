@@ -57,19 +57,54 @@ setup_rhessys_folders = function(base_dir) {
 # text and sound alert, inside of collect output
 #' Play a visual and audio alert when simulations complete
 #'
-#' @param txt Message to display
+#' @param txt Message to display (supports multiple lines with \n)
 #' @param fg Foreground ANSI color code
 #' @param bg Background ANSI color code
+#' @param beeptype Type of beep sound (see `beepr::beep` for options)
+#' @param beepct Number of times to beep
+#' @param quiet Logical; if TRUE, suppresses visual and audio alerts
 #' @export
-sim_alert = function(txt = "Simulations Complete", fg = 46, bg = 24) {
-  # txt = "\t\t\tSimulations Complete\t\t\t"
-  # 0:255
-  # fg = 46
-  # bg = 24
+sim_alert = function(txt = "Simulations Complete", fg = 231, bg = 55, beeptype = 2, beepct = 1, quiet = F) {
+  lines = strsplit(txt, "\n")[[1]]
   w = getOption("width") + 4
-  pad = paste0(rep(" ",(w - nchar(txt))/2),collapse = "")
-  cat(paste0("\033[38;5;",fg,";48;5;",bg,"m",pad,txt,pad,"\033[0m","\n"))
-  beepr::beep(2)
+  
+  padded_lines = sapply(lines, function(line) {
+    pad = paste0(rep(" ", (w - nchar(line)) / 2), collapse = "")
+    paste0(pad, line, pad)
+  })
+  
+  output = paste0("\033[38;5;", fg, ";48;5;", bg, "m", 
+                  paste(padded_lines, collapse = "\n"), 
+                  "\033[0m", "\n")
+  if (!quiet) {
+    for (i in seq_len(beepct)) {
+      beepr::beep(beeptype)
+    }
+  }
+  cat(output)
+}
+
+# ================================================================================
+#' Display a Windows toast notification
+#' @param txt Message to display in the toast notification
+#' @param src Source application name for the toast notification
+#' 
+#' @export
+win_banner = function(txt, src = "R - Positron") {
+  system2(
+    "powershell",
+    args = c(
+      "-Command",
+      paste0(
+        "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null;",
+        "$template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02);",
+        "$template.SelectSingleNode('//text[@id=1]').InnerText = '",txt,"';",
+        # "$template.SelectSingleNode('//text[@id=2]').InnerText = 'Run ID: ", GetRunID(), "';",
+        "$toast = [Windows.UI.Notifications.ToastNotification]::new($template);",
+        "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('",src,"').Show($toast);"
+      )
+  )
+  )
 }
 
 # ================================================================================

@@ -5,30 +5,32 @@
 \title{Collect RHESSys run outputs}
 \usage{
 collect_output(
-  source_dir = "./",
   basename = "rh_out_",
+  source_dir = "./",
   output_dir = "output",
-  out_file_basename = NULL,
-  alert = T
+  pattern = NULL,
+  alert = T,
+  quiet = F,
+  banner = T
 )
 }
 \arguments{
-\item{source_dir}{character(1). Directory where source files (params and the
-output directory) live. Defaults to \"./\".}
-
 \item{basename}{character(1). Prefix for the created timestamped folder.
 Defaults to \"rh_out_\".}
+
+\item{source_dir}{character(1). Directory where source files (params and the
+output directory) live. Defaults to \"./\".}
 
 \item{output_dir}{character(1). Relative path (inside source_dir) to the
 directory that contains RHESSys outputs (CSV files and run metadata).
 Defaults to \"output\". This directory must already exist.}
 
-\item{out_file_basename}{character(1) or NULL. If provided, only CSV files
-that start with this basename will be moved. If NULL (default), all CSV
-files in output_dir are moved.}
+\item{pattern}{character(1) or NULL. If provided, only files matching this pattern will be moved. If NULL (default), all files are considered.}
 
 \item{alert}{logical(1). If TRUE and CSV files are moved, calls
 sim_alert() after moving CSVs. Defaults to TRUE.}
+
+\item{quiet}{logical(1). If TRUE, suppresses messages and alerts. Defaults to FALSE.}
 }
 \value{
 character(1) Path to the newly created timestamped directory
@@ -62,12 +64,12 @@ files matching the pattern are present, the most recent is selected.
 \dontrun{
 # Collect outputs into output/rh_out_<timestamp> and do not trigger alert
 collect_output(
- source_dir = "~/projects/my_run",
  basename = "run_",
+ source_dir = "~/projects/my_run",
  output_dir = "output",
- alert = FALSE
+ alert = TRUE,
+ quiet = FALSE
 )
-
 
 
 # Use current working directory and default names
