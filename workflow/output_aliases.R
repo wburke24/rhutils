@@ -10,8 +10,10 @@ output_vars_soils_debug = c("patch.soil_cs.totalc", "patch.soil_cs.DOC", "patch.
                             "patch.snowpack.water_equivalent_depth", "patch.rootzone.depth", "patch.gw_drainage", "patch.rz_storage", "patch.unsat_storage")
 
 # streamflow calibration
-output_vars_streamflowcal = c("patch.evaporation", "patch.transpiration_unsat_zone", "patch.transpiration_sat_zone", "patch.streamflow",
-                              "patch.snowpack.water_equivalent_depth", "patch.sat_deficit", "patch.lai", "stratum.epv.height", "patch.rootzone.depth" )
+# output_vars_streamflowcal = c("patch.evaporation", "patch.transpiration_unsat_zone", "patch.transpiration_sat_zone", "patch.streamflow",
+#                               "patch.snowpack.water_equivalent_depth", "patch.sat_deficit", "patch.lai", "stratum.epv.height", "patch.rootzone.depth" )
+
+output_vars_streamflowcal = c("patch.streamflow", "hill.base_flow")
 
 # water balance +
 output_vars_waterbal = c("patch.evaporation","patch.evaporation_surf", "patch.exfiltration_sat_zone", "patch.exfiltration_unsat_zone",
@@ -31,6 +33,8 @@ output_vars_interest = c("stratum.cs.net_psn", "patch.sat_deficit", "patch.lai",
 output_carbon_stratum = c("stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "stratum.cs.live_crootc", "stratum.cs.dead_crootc", "stratum.cs.frootc", "stratum.cs.cwdc", "stratum.cs.cwdc_bg", "stratum.cs.gresp_transfer","stratum.cs.gresp_store")
 
 output_carbon_all = c(output_carbon_stratum, "patch.litter_cs.totalc")
+
+output_ecophys_stratum = c("stratum.epv.height", "stratum.transpiration_unsat_zone", "stratum.transpiration_sat_zone", "stratum.evaporation", "stratum.cs.net_psn")
 
 output_doc = c("patch.streamflow","patch.PET", "patch.snowpack.water_equivalent_depth", "hill.base_flow", "patch.surface_DOC", "patch.surface_DOC_Qin", "patch.surface_DOC_Qout", "patch.soil_cs.DOC","patch.soil_cs.DOC_Qin","patch.soil_cs.DOC_Qout", "patch.streamflow_DOC", "patch.cdf.DOC_to_gw", "hill.gw.DOC")
 

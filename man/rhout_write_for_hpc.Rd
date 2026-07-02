@@ -4,7 +4,7 @@
 \alias{rhout_write_for_hpc}
 \title{Format RHESSys run commands for HPC submission}
 \usage{
-rhout_write_for_hpc(rhout, name, rh_bin_replace = NULL)
+rhout_write_for_hpc(rhout, name, rh_bin_replace = NULL, prefix_cmd = NULL)
 }
 \arguments{
 \item{rhout}{Character vector of RHESSys commands}
@@ -12,6 +12,8 @@ rhout_write_for_hpc(rhout, name, rh_bin_replace = NULL)
 \item{name}{Label to include in the output filename}
 
 \item{rh_bin_replace}{Optional replacement RHESSys binary path}
+
+\item{prefix_cmd}{Optional command prefix}
 }
 \description{
 Format RHESSys run commands for HPC submission

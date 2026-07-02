@@ -7,7 +7,7 @@
 defpars_list2df(defpars)
 }
 \arguments{
-\item{defpars}{List of definition parameters}
+\item{defpars}{List of def parameters}
 }
 \description{
 Convert defpar list to data frame

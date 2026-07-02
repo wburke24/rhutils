@@ -4,12 +4,14 @@
 \alias{par_ranges_by_pctle}
 \title{Compute parameter ranges for top-performing runs}
 \usage{
-par_ranges_by_pctle(defchg_nse, pct = 0.9)
+par_ranges_by_pctle(defchg_nse, pct = 0.9, list = FALSE)
 }
 \arguments{
 \item{defchg_nse}{Combined parameter/statistics table}
 
 \item{pct}{Quantile threshold used to select runs}
+
+\item{list}{Logical; return list instead of data frame}
 }
 \description{
 Compute parameter ranges for top-performing runs

@@ -4,14 +4,21 @@
 #' Move WMFire grids into timestamped folder
 #'
 #' @param dir Directory containing WMFire grid outputs
+#' @param dest Destination directory for moved files (optional)
 #' @export
-cleanup_wmfire = function(dir) {
+cleanup_wmfire = function(dir, dest = NULL) {
   pat = "ETGridYear|FireFailedIterGridYear|FireSizes|FireSpreadIterGridYear|FireSpreadPropGridYear|LoadGridYear|PDefGridYear|PETGridYear|PLoadGridYear|PSlopeGridYear|PWindGridYear|RelDefGridYear|SoilMoistGridYear|UnderETGridYear|UnderPETGridYear|VegLoadGridYear|CWDGridYear"
   files = list.files(path = dir, pattern = pat, full.names = F)
-  dirname = paste0("fire_grids_out_", gsub( ":", ".", sub( " ", "_", Sys.time())))
-  dir.create(path = file.path(dir, dirname))
-  cat("Created directory '",file.path(dir, dirname),"'\n", sep = "")
-  shh = file.rename(from = file.path(dir, files), to = file.path(dir,dirname,files))
+  
+  if (is.null(dest)) {
+    dirname = paste0("fire_grids_out_", gsub( ":", ".", sub( " ", "_", Sys.time())))
+    dir.create(path = file.path(dir, dirname))
+    cat("Created directory '",file.path(dir, dirname),"'\n", sep = "")
+    shh = file.rename(from = file.path(dir, files), to = file.path(dir,dirname,files))
+  } else {
+    dir.create(path = dest, showWarnings = FALSE, recursive = TRUE)
+    shh = file.rename(from = file.path(dir, files), to = file.path(dest, files))
+  }
   cat("Moved fire grid output files to new directory\n")
 }
 

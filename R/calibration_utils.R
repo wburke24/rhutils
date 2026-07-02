@@ -105,17 +105,30 @@ def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
 #'
 #' @param defchg_nse Combined parameter/statistics table
 #' @param pct Quantile threshold used to select runs
+#' @param list Logical; return list instead of data frame
 #' @export
-par_ranges_by_pctle = function(defchg_nse, pct = .90) {
-  x = as.numeric(defchg_nse[1,3:ncol(defchg_nse)])
-  pctl = quantile(x = x, probs = pct)
-  tmp = defchg_nse[,3:ncol(defchg_nse)]
-  def90 = tmp[,tmp[1,] >= pctl]
-  ranges = data.frame(min = as.numeric(apply(def90,1,min)), max = as.numeric(apply(def90,1,max)))
+par_ranges_by_pctle = function(defchg_nse, pct = .90, list = FALSE) {
+  nse = as.numeric(defchg_nse[1,3:ncol(defchg_nse)])
+  pctl = quantile(x = nse, probs = pct)
+  pars = defchg_nse[,3:ncol(defchg_nse)]
+  pars_pctle = pars[,pars[1,] >= pctl]
+  ranges = data.frame(min = as.numeric(apply(pars_pctle,1,min)), max = as.numeric(apply(pars_pctle,1,max)))
   # signif(ranges, digits = 5)
-  ranges = cbind(variable = defchg_nse[,1],ranges)
-  cat("90th Percentile NSE - Ranges of Pars\n------------------------------------\n")
+  ranges = cbind(Variable = defchg_nse[,1], Def_file = defchg_nse[,2], ranges)
+  cat(pct * 100, "th Percentile NSE - Ranges of Pars\n------------------------------------\n")
   print(ranges)
+  if (list) {
+    rangeslist = ranges[!ranges$Variable %in% c("NSE", "PBIAS", "NSElog", "RMSE", "R2"),]
+    pars_list = list()
+    for (i in 1:nrow(rangeslist)) {
+      pars_list[[i]] = list(
+        "Def_file" = rangeslist[i, "Def_file"],
+        "Variable" = rangeslist[i, "Variable"],
+        "Value" = c(rangeslist[i, "min"], rangeslist[i, "max"])
+      )
+    }
+    return(pars_list)
+  }
   return(ranges)
 }
 

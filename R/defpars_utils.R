@@ -130,7 +130,7 @@ write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NUL
 # ================================================================================
 #' Convert defpar list to data frame
 #'
-#' @param defpars List of definition parameters
+#' @param defpars List of def parameters
 #' @export
 defpars_list2df = function (defpars) {
   df = data.frame(Variable = sapply(defpars, "[[", 2), Def_file = sapply(defpars, "[[", 1))
@@ -138,6 +138,27 @@ defpars_list2df = function (defpars) {
   names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
   return(df)
 }
+
+# # ================================================================================
+# #' Convert defpar data frame to list
+# #'
+# #' @param defpar_df Default parameter data frame
+# #' @export
+# defpars_df2list = function (defpar_df) {
+    
+#   pars_list = list()
+#   for (i in 1:nrow(defpar_df)) {
+#     par_name = defpar_df[i,1]
+#     par_a = defpar_df[i,2]
+#     par_b = defpar_df[i,3]
+#     pars_list[[i]] = list("Def_file" = def_file, "Variable" = par_name, "Value" = c(par_a, par_b))
+#   }
+  
+#   df = data.frame(Variable = sapply(defpar_df, "[[", 2), Def_file = sapply(defpar_df, "[[", 1))
+#   df = cbind(df, t( unname(as.data.frame(lapply(defpar_df, "[[", 3))) ))
+#   names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
+#   return(defpar_list)
+# }
 
 # ================================================================================
 # transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr

@@ -4,10 +4,12 @@
 \alias{cleanup_wmfire}
 \title{Move WMFire grids into timestamped folder}
 \usage{
-cleanup_wmfire(dir)
+cleanup_wmfire(dir, dest = NULL)
 }
 \arguments{
 \item{dir}{Directory containing WMFire grid outputs}
+
+\item{dest}{Destination directory for moved files (optional)}
 }
 \description{
 Move WMFire grids into timestamped folder

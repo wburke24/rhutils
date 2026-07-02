@@ -251,9 +251,6 @@ LPC2std_veg_cover = function(lpc_df, mask_map_path, lpc_map_list, vegid_tree = 1
   return(veg_cover)
 }
 
-# write_rules
-# vegid_XXXX to set the def file id for a given veg type from the LPC data
-# MODIFY VEG ID, ADD 20 (PREFIX WITH 2)
 #' Write RHESSys rules file from LPC-derived rules
 #'
 #' @param rules Data frame of rules and cover fractions
@@ -265,7 +262,7 @@ LPC2std_veg_cover = function(lpc_df, mask_map_path, lpc_map_list, vegid_tree = 1
 #' @param thin_vegid_mod Offset to apply for thinned vegetation IDs
 #' @param strata_ct Optional vector of strata counts per rule
 #' @export
-write_rules_file = function(rules, output_rules_file, vegid_tree = 1, vegid_shrub = 5, vegid_herb = 3, vegid_other = 4, thin_vegid_mod = 0, strata_ct = NULL) {
+write_LPC_rules_file = function(rules, output_rules_file, vegid_tree = 1, vegid_shrub = 5, vegid_herb = 3, vegid_other = 4, thin_vegid_mod = 0, strata_ct = NULL) {
   
   fcon = file(output_rules_file,open = "wt")
   vals = as.data.frame(rules)[!names(rules) %in% c("id", "rule")]

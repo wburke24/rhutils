@@ -8,6 +8,7 @@ rhessysIO2pronghorn(
   rhout,
   name,
   rh_bin_replace = "/RHESSys/rhessys7.5",
+  prefix_cmd = NULL,
   dest,
   usr,
   input_rhessys = NULL,

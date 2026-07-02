@@ -7,7 +7,7 @@
 list_rh_input_files(
   input_rhessys,
   input_hdr,
-  input_def_pars,
+  input_def_pars = NULL,
   input_tec_data,
   output_filter
 )

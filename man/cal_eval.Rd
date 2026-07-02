@@ -4,12 +4,26 @@
 \alias{cal_eval}
 \title{cal_eval}
 \usage{
-cal_eval(Qsim, Qobs, monthly = F, echo_best = T)
+cal_eval(
+  Qsim,
+  Qobs,
+  plots = F,
+  plot_path = "plots",
+  plot_name = "cal_plots",
+  monthly = F,
+  echo_best = T
+)
 }
 \arguments{
 \item{Qsim}{Simulated streamflow data or path to file}
 
 \item{Qobs}{Observed streamflow data or path to file}
+
+\item{plots}{Plot observed vs simulated (TRUE/FALSE)}
+
+\item{plot_path}{Directory where output PDF will be written}
+
+\item{plot_name}{Prefix used when naming output PDF}
 
 \item{monthly}{Use monthly aggregation (TRUE/FALSE)}
 

@@ -5,8 +5,9 @@
 #' @param rhout Character vector of RHESSys commands
 #' @param name Label to include in the output filename
 #' @param rh_bin_replace Optional replacement RHESSys binary path
+#' @param prefix_cmd Optional command prefix
 #' @export
-rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
+rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL, prefix_cmd = NULL) {
   #---- for hpc and copying files
   rhout_str = unlist(rhout)
   # remove leading 'wsl bash -lc ' if present
@@ -17,7 +18,7 @@ rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
   rhout_str = gsub('\\"',"",rhout_str)
   # replace rhessys binary path if desired
   if (!is.null(rh_bin_replace)) {
-    rhout_str = gsub("^.*rhessys\\d{1}\\.\\d{1} ", paste0(trimws(rh_bin_replace)," "),rhout_str)
+    rhout_str = gsub("^.*rhessys\\S+\\s+", paste0(trimws(rh_bin_replace), " "), rhout_str)
     # rhout_str = gsub("../bin/rhessys\\d{1}.\\d{1}", "/RHESSys/rhessys7.5",rhout_str)
   }
 
@@ -33,6 +34,11 @@ rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
     # Concatenate the modified input string with "-par x" at the end
     rhout_str_par <- paste0(rhout_str, " -par ", x_value)
   }
+  # if theres a prefix command, use bash -c and single quotes to wrap both commands
+  if (!is.null(prefix_cmd)) {
+    rhout_str_par = paste0("bash -c '", trimws(prefix_cmd), " && ", rhout_str_par, "'")
+  }
+
   outfile = paste0("scripts/",name,"_runcmds_",format(Sys.time(), "%Y-%m-%d--%H-%M-%S"),".txt" )
   writeLines(text = rhout_str_par,con = outfile)
   cat("Wrote RHESSys cmds to:", outfile)
@@ -47,7 +53,7 @@ rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL) {
 #' @param input_tec_data Tec events data frame
 #' @param output_filter Output filter list
 #' @export
-list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter) {
+list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars = NULL, input_tec_data, output_filter) {
 
   outlist = list()
   outlist$all_files = NA
@@ -85,6 +91,7 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
     # defs - assumes everything included in input defs is changing which i think is true
     defs_chg = unlist(unique(lapply(input_def_pars,"[",1)))
     defs_static = unname(unlist(input_hdr))[!unname(unlist(input_hdr)) %in% defs_chg]
+
     defs_chg_list = list()
     for (i in seq_along(defs_chg)) {
       defs_chg_list[[i]] = file.path("defs",gsub(".def","",basename(defs_chg[i])), paste0(gsub(".def","",basename(defs_chg[i])), runsuffix,".def"))
@@ -97,6 +104,11 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
     outlist$def_files = unname(unlist(input_hdr))
     outlist$outputfilters = paste0(output_filter$file_name)
   }
+  if ("fire_grid_prefix" %in% names(input_hdr)) {
+      fire_grids = paste(unname(unlist(input_hdr$fire_grid_prefix)), c(".dem", ".hillslope", ".patch",".zone"), sep = "")
+      outlist$def_files = outlist$def_files[-which(outlist$def_files == input_hdr$fire_grid_prefix)]
+      outlist$def_files = c(outlist$def_files, fire_grids)
+  }
 
   outlist$static_files = c(outlist$worldfile, outlist$flow_file, outlist$clim_files)
   outlist$run_files = c(outlist$redefs, outlist$hdr_files, outlist$def_files, outlist$outputfilters, outlist$tec_files)
@@ -104,8 +116,18 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
 
   cat("Do all the files exist?: ",all(file.exists(outlist$all_files)),"\n")
   if (!all(file.exists(outlist$all_files))) {
-    print(data.frame(file = outlist$all_files, exists = file.exists(outlist$all_files)))
-    stop("Something went wrong, trying to list nonexistent files.\n")
+    tmp = data.frame(file = outlist$all_files, exists = file.exists(outlist$all_files))
+    print(tmp[tmp$exists == FALSE,])
+    # print(outlist$all_files[!file.exists(outlist$all_files)])
+    message("Some files do not exist - Removing from list.\n")
+    outlist$all_files = outlist$all_files[file.exists(outlist$all_files)]
+    outlist$static_files = outlist$static_files[file.exists(outlist$static_files)]
+    outlist$run_files = outlist$run_files[file.exists(outlist$run_files)]
+    outlist$clim_files = outlist$clim_files[file.exists(outlist$clim_files)]
+    outlist$hdr_files = outlist$hdr_files[file.exists(outlist$hdr_files)]
+    outlist$def_files = outlist$def_files[file.exists(outlist$def_files)]
+    outlist$outputfilters = outlist$outputfilters[file.exists(outlist$outputfilters)]
+    outlist$tec_files = outlist$tec_files[file.exists(outlist$tec_files)]
   }
   return(outlist)
 }
@@ -126,18 +148,42 @@ list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars, input_t
 #' @param transfer_method Transfer method (`"scp"` or `"rsync"`)
 #' @param rsa_loc Path to SSH key
 #' @export
-rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.5", dest, usr,
-                               input_rhessys = NULL, input_hdr = NULL, input_def_pars = NULL, input_tec_data = NULL, output_filter = NULL,
-                               filelist = NULL,
-                               transfer_method = "scp",
-                               rsa_loc = "~/rsa_key") {
+rhessysIO2pronghorn = function(
+  rhout,
+  name,
+  rh_bin_replace = "/RHESSys/rhessys7.5",
+  prefix_cmd = NULL,
+  dest,
+  usr,
+  input_rhessys = NULL,
+  input_hdr = NULL,
+  input_def_pars = NULL,
+  input_tec_data = NULL,
+  output_filter = NULL,
+  filelist = NULL,
+  transfer_method = "scp",
+  rsa_loc = "~/rsa_key"
+) {
   # ----- input checks -----
-  if (!endsWith(usr,":") ) {usr = paste0(usr,":")}
+  transfer_method = tolower(transfer_method)
+  if (!transfer_method %in% c("scp", "rsync")) {
+    stop("transfer_method must be either 'scp' or 'rsync'.")
+  }
+
+  if (!endsWith(usr, ":")) {
+    usr = paste0(usr, ":")
+  }
   #fix output strings and write to file
-  rhout_str = rhout_write_for_hpc(rhout, name, rh_bin_replace = rh_bin_replace)
+  rhout_str = rhout_write_for_hpc(rhout, name, rh_bin_replace = rh_bin_replace, prefix_cmd = prefix_cmd)
   # make list of changed files
   if (is.null(filelist) & !is.null(input_rhessys)) {
-    filelist = list_rh_input_files(input_rhessys, input_hdr, input_def_pars, input_tec_data, output_filter)
+    filelist = list_rh_input_files(
+      input_rhessys,
+      input_hdr,
+      input_def_pars,
+      input_tec_data,
+      output_filter
+    )
   }
 
   if (transfer_method == "scp") {
@@ -145,26 +191,73 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
     for (i in seq_along(unique(dirname(filelist$def_files)))) {
       defdir = unique(dirname(filelist$def_files))[i]
       defdirfiles = filelist$def_files[dirname(filelist$def_files) == defdir]
-      defstr = c(defstr,paste0("scp -i ",rsa_loc," -p ",paste(defdirfiles,collapse =" ")," ", usr,dest,defdir))
+      defstr = c(
+        defstr,
+        paste0(
+          "scp -i ",
+          rsa_loc,
+          " -p ",
+          paste(defdirfiles, collapse = " "),
+          " ",
+          usr,
+          dest,
+          defdir
+        )
+      )
     }
 
     scptxt =
       c(
-        paste0("scp -i ", rsa_loc, " -p ",paste(filelist$tec_files,collapse =" ")," ", usr,dest,"tecfiles/"),
-        paste0("scp -i ", rsa_loc, " -p ",paste(filelist$outputfilters,collapse =" ")," ", usr,dest,"output/filters"),
-        paste0("scp -i ", rsa_loc, " -p ",paste(filelist$hdr_files,collapse =" ")," ", file.path(usr,dest,unique(dirname(filelist$hdr_files)))),
+        paste0(
+          "scp -i ",
+          rsa_loc,
+          " -p ",
+          paste(filelist$tec_files, collapse = " "),
+          " ",
+          usr,
+          dest,
+          "tecfiles/"
+        ),
+        paste0(
+          "scp -i ",
+          rsa_loc,
+          " -p ",
+          paste(filelist$outputfilters, collapse = " "),
+          " ",
+          usr,
+          dest,
+          "output/filters"
+        ),
+        paste0(
+          "scp -i ",
+          rsa_loc,
+          " -p ",
+          paste(filelist$hdr_files, collapse = " "),
+          " ",
+          file.path(usr, dest, unique(dirname(filelist$hdr_files)))
+        ),
         defstr,
-        paste0("scp -i ", rsa_loc, " -p ",rhout_str," ", usr,dest,"scripts")
+        paste0("scp -i ", rsa_loc, " -p ", rhout_str, " ", usr, dest, "scripts")
       )
 
-    remote_dirs = paste(unique(dirname(filelist$all_files)),collapse = " ")
-    dircmd = paste0("wsl ssh -i ", rsa_loc, " ", gsub(":","",usr)," \"cd ",dest,"&& mkdir -p ",remote_dirs,"\"")
-    cat("\nMaking dirs: ",dircmd,"\n\n")
+    remote_dirs = paste(unique(dirname(filelist$all_files)), collapse = " ")
+    dircmd = paste0(
+      "wsl ssh -i ",
+      rsa_loc,
+      " ",
+      gsub(":", "", usr),
+      " \"cd ",
+      dest,
+      "&& mkdir -p ",
+      remote_dirs,
+      "\""
+    )
+    cat("\nMaking dirs: ", dircmd, "\n\n")
     system(dircmd)
 
     cat("\nRunning SCP commands...\n\n")
-    scpcon = file("scripts/scpfilelist.sh","wb")
-    writeLines(text = c("#!/bin/bash",scptxt), con = scpcon, sep = "\n")
+    scpcon = file("scripts/scpfilelist.sh", "wb")
+    writeLines(text = c("#!/bin/bash", scptxt), con = scpcon, sep = "\n")
     close(scpcon)
     system("wsl ./scripts/scpfilelist.sh")
     file.remove("scripts/scpfilelist.sh")
@@ -174,30 +267,61 @@ rhessysIO2pronghorn = function(rhout, name, rh_bin_replace = "/RHESSys/rhessys7.
     # system(scpcmd)
     cat("SCP file transfer completed.\n")
     return(rhout_str)
-
   } else if (transfer_method == "rsync") {
-    # Ensure remote dirs exist (create under dest)
-    remote_dirs = paste(unique(dirname(filelist$all_files)), collapse = " ")
-    dircmd = paste0("wsl ssh -i ", rsa_loc, " ", gsub(":","",usr), " \"cd ", dest, " && mkdir -p ", remote_dirs, "\"")
+    # Match SCP behavior: transfer tec, output filters, headers, defs, and generated run script.
+    files_to_copy = unique(c(
+      filelist$tec_files,
+      filelist$outputfilters,
+      filelist$hdr_files,
+      filelist$def_files,
+      rhout_str
+    ))
+    files_to_copy = files_to_copy[file.exists(files_to_copy)]
+
+    # Ensure remote dirs exist (create under dest for the directories being transferred)
+    remote_dirs = paste(unique(dirname(files_to_copy)), collapse = " ")
+    dircmd = paste0(
+      "wsl ssh -i ",
+      rsa_loc,
+      " ",
+      gsub(":", "", usr),
+      " \"cd ",
+      dest,
+      " && mkdir -p ",
+      remote_dirs,
+      "\""
+    )
     cat("\nMaking dirs: ", dircmd, "\n\n")
-    system(dircmd)
+    dir_status = system(dircmd)
+    if (!identical(dir_status, 0L)) {
+      stop("Failed to create remote directories for rsync transfer.")
+    }
 
-    # Build list of files to transfer (unique, include generated run script)
-    files_to_copy = unique(c(filelist$all_files, rhout_str))
+    # Write file list to a temp file to avoid Windows command line length limits
+    files_from_tmp = tempfile(fileext = ".txt")
+    writeLines(files_to_copy, files_from_tmp)
+    # Convert Windows path to WSL path for --files-from
+    files_from_wsl = system(
+      paste0("wsl wslpath -u \"", files_from_tmp, "\""),
+      intern = TRUE
+    )
 
-    # Quote file paths to handle spaces/special chars
-    files_quoted = paste(shQuote(files_to_copy), collapse = " ")
-
-    # Use rsync with -R to preserve relative paths, -a for archive, -z for compression,
-    # and specify ssh with the provided identity file.
     rsync_cmd = paste0(
-      "wsl rsync -azR -e \"ssh -i ", rsa_loc, "\" ",
-      files_quoted, " ",
-      usr, dest
+      "wsl rsync -aRv --files-from=",
+      files_from_wsl,
+      " . ",
+      "-e \"ssh -i ",
+      rsa_loc,
+      "\" ",
+      usr,
+      dest
     )
 
     cat("\nRunning rsync command...\n\n")
-    system(rsync_cmd)
+    rsync_status = system(rsync_cmd)
+    if (!identical(rsync_status, 0L)) {
+      stop("rsync file transfer failed.")
+    }
 
     cat("Rsync file transfer completed.\n")
     return(rhout_str)

@@ -105,6 +105,56 @@ add_patchfamily_IDarea = function(output_df) {
 }
 
 # ================================================================================
+#' Add a variable as a new column in the world data frame
+#' 
+#' @param world A data frame representing the world data, typically produced by \code{read_world}.
+#' @param varname The name of the variable to be added as a new column.
+#' @return The modified world data frame with the new variable added as a column.
+#' @export
+
+world_add_var_as_col = function(world, varname) {
+  if (!varname %in% world$vars) {
+    stop(paste("Variable", varname, "not found in world data frame."))
+  }
+  levels = c("world", "basin", "hillslope", "zone", "patch", "canopy_strata")
+  # find level of varname
+  var_level = unique(world$level[world$vars == varname])
+  # check by level, if there are more than 1 num_x, then join by current level IDs, otherwise, go up a level and check again
+  level_index = match(var_level, levels)
+  level_i = level_index
+  while (level_i > 1) {
+    level_i = level_i - 1
+    level_name = levels[level_i]
+    n_level = world[world$level == level_name & grepl("num_", world$vars), "values"] %>% max()
+    if (n_level > 1) {
+      level_i = level_i + 1
+      level_name = levels[level_i]
+      break
+    }
+  }
+  world = as.data.table(world)
+  # join by the ID of level_i
+  if (level_name == "canopy_strata") {
+    world = merge.data.table(world, world[world$vars == varname, .(ID, values)], by = "ID", all.x = TRUE, sort = F)
+  } else if (level_name == "patch") {
+    world = merge.data.table(world, world[world$vars == varname, .(patch_ID, values)], by = "patch_ID", all.x = TRUE, sort = F)
+  } else if (level_name == "zone") {
+    world = merge.data.table(world, world[world$vars == varname, .(zone_ID, values)], by = "zone_ID", all.x = TRUE, sort = F)
+  } else if (level_name == "hillslope") {
+    world = merge.data.table(world, world[world$vars == varname, .(hillslope_ID, values)], by = "hillslope_ID", all.x = TRUE, sort = F)
+  } else if (level_name == "basin") {
+    return("Fix this.\n")
+  } else if (level_name == "world") {
+    return("Trying to join to world probably not working.\n")
+  }
+  names(world)[names(world) == "values.y"] = varname
+  names(world)[names(world) == "values.x"] = "values"
+
+  return(as.data.frame(world))
+}
+
+
+# ================================================================================
 # aggregate to patch family using area weights
 #' Aggregate patch data to patch families
 #'
@@ -416,9 +466,102 @@ read_world_strata_veg_parm_IDs = function(worldfile) {
   return(out)
 }
 
+# testing ------------
 # out = read_world_strata_veg_parm_IDs(worldfile)
-
 # source("c:/Users/burke/Documents/Repos/rhutils/R/worldfile_utils.R")
 # worldfile = "../../PNW/GateCreek/worldfiles/Gatecreek_stable_v3.world"
-
 # fast = system.time(invisible(read_world_strata_veg_parm_IDs(worldfile)))["elapsed"]
+
+# --------- shift vars from soil spun up world to world w 4 msr patches -----------
+
+#' Shift values from a soil spun-up worldfile to a new worldfile with multiple patches
+#' 
+#' This function takes a soil spun-up worldfile and shifts the values to a new worldfile that has multiple patches. It essentially moves values by patch family ID, and within each patch family, it distributes patch (and strata) values from one patch to many based on vegetation ID. NOT HEAVILY TESTED, WILL HAVE BUGS.
+#' @param world_in_path Path to the input worldfile
+#' @param world_out_path Path to the output worldfile
+#' @param world_output_filename Name of the output worldfile
+#' @export
+
+shift_msr_world_vals = function(world_in_path, world_out_path, world_output_filename) {
+  cat("This will have bugs, not heavily tested. Use with caution.\n")
+  
+  # ---------- read worldfiles ----------
+  world_in = as.data.table(read_world(worldfile = world_in_path))
+  world_out = as.data.table(read_world(worldfile = world_out_path))
+  
+  # ---------- vars to change ----------
+  vars_zonehill = c("gw.storage", "gw.NO3")
+  vars_list = c("Ksat_vertical", "mpar", "rz_storage", "unsat_storage", "sat_deficit", "snowpack.water_equivalent_depth", "snowpack.water_depth", "snowpack.T", 
+                "snowpack.surface_age", "snowpack.energy_deficit", "litter.cover_fraction","litter.rain_stored", "litter_cs.litr1c", "litter_ns.litr1n", 
+                "litter_cs.litr2c", "litter_cs.litr3c", "litter_cs.litr4c", "soil_cs.soil1c", "soil_ns.sminn", "soil_ns.nitrate", "soil_cs.soil2c", "soil_cs.soil3c", 
+                "soil_cs.soil4c", "rootzone.depth", "snow_stored", "rain_stored", "cs.cpool", "cs.leafc", "cs.dead_leafc", 
+                "cs.leafc_store", "cs.leafc_transfer", "cs.live_stemc", "cs.livestemc_store", "cs.livestemc_transfer", "cs.dead_stemc", "cs.deadstemc_store", 
+                "cs.deadstemc_transfer", "cs.live_crootc", "cs.livecrootc_store", "cs.livecrootc_transfer", "cs.dead_crootc", "cs.deadcrootc_store", 
+                "cs.deadcrootc_transfer", "cs.frootc", "cs.frootc_store", "cs.frootc_transfer", "cs.cwdc", "epv.prev_leafcalloc", "ns.npool", "ns.leafn", "ns.dead_leafn", 
+                "ns.leafn_store", "ns.leafn_transfer", "ns.live_stemn", "ns.livestemn_store", "ns.livestemn_transfer", "ns.dead_stemn", "ns.deadstemn_store", 
+                "ns.deadstemn_transfer", "ns.live_crootn", "ns.livecrootn_store", "ns.livecrootn_transfer", "ns.dead_crootn", "ns.deadcrootn_store", 
+                "ns.deadcrootn_transfer", "ns.frootn", "ns.frootn_store", "ns.frootn_transfer", "ns.cwdn", "ns.retransn", "epv.wstress_days", "epv.max_fparabs", 
+                "epv.min_vwc")
+  
+  # ---------- check patch and family counts ----------
+  in_pID = unique(world_in[world_in$level == "patch", "ID"])
+  #in_famID = unique(world_in[world_in$vars == "family_ID", "values"])
+  # ^^ DOESNT WORK BECAUSE FAM ID WASNT OUTPUT W WORLD STATE
+  in_famID = unique(substr(in_pID$ID, 0, nchar(in_pID$ID) - 2))
+  out_pID = unique(world_out[world_out$level == "patch", "ID"])
+  out_famID = unique(world_out[world_out$level == "patch" & world_out$vars == "family_ID", "values"])
+  cat("          Input | Output\nPatches:", length(in_pID$ID), " | ", length(out_pID$ID), "\nFamilies:", length(in_famID), " | ", length(out_famID$values))
+  
+  # ---------- add family ID column ----------
+  world_in$pID = world_in$ID
+  world_in$pID[!(world_in$level == "patch" | world_in$level == "canopy_strata")] = NA
+  world_in$pID[!is.na(world_in$pID) & world_in$level == "canopy_strata"] = 
+    substr(world_in$pID[!is.na(world_in$pID) & world_in$level == "canopy_strata"], 0, nchar(world_in$pID[!is.na(world_in$pID) & world_in$level == "canopy_strata"]) - 1 )
+  world_in$famID = world_in$pID
+  world_in$famID[!is.na(world_in$famID)] = substr(world_in$famID[!is.na(world_in$famID)], 0, nchar(world_in$famID[!is.na(world_in$famID)]) - 2 )
+  
+  world_out$pID = world_out$ID
+  world_out$pID[!(world_out$level == "patch" | world_out$level == "canopy_strata")] = NA
+  world_out$pID[!is.na(world_out$pID) & world_out$level == "canopy_strata"] = 
+    substr(world_out$pID[!is.na(world_out$pID) & world_out$level == "canopy_strata"], 0, nchar(world_out$pID[!is.na(world_out$pID) & world_out$level == "canopy_strata"]) - 1 )
+  world_out$famID = world_out$pID
+  world_out$famID[!is.na(world_out$famID)] = substr(world_out$famID[!is.na(world_out$famID)], 0, nchar(world_out$famID[!is.na(world_out$famID)]) - 2 )
+  
+  # ---------- add vegparm column  ----------
+  in_vegparm = world_in[world_in$vars == "veg_parm_ID", "values"]
+  in_vegparm$values = as.numeric(in_vegparm$values)
+  in_vegparm$values[in_vegparm$values > 20] = in_vegparm$values[in_vegparm$values > 20] - 20
+  out_patches = unique(world_out[world_out$level == "patch", "ID"])
+  in_patches = unique(world_in[world_in$level == "patch", "ID"])
+  in_veg_patches = data.table(in_vegparm, in_patches)
+  names(in_veg_patches) = c("vegparm", "pID")
+  world_in = merge.data.table(world_in, in_veg_patches, by = "pID", all.x = TRUE, sort = F)
+  
+  out_vegparm = world_out[world_out$vars == "veg_parm_ID", "values"]
+  out_vegparm$values = as.numeric(out_vegparm$values)
+  out_vegparm$values[out_vegparm$values > 20] = out_vegparm$values[out_vegparm$values > 20] - 20
+  out_patches = unique(world_out[world_out$level == "patch", "ID"])
+  out_veg_patches = data.table(out_vegparm, out_patches)
+  names(out_veg_patches) = c("vegparm", "pID")
+  world_out = merge.data.table(world_out, out_veg_patches, by = "pID", all.x = TRUE, sort = F)
+  
+  # ---------- init world for merge ----------
+  world_merge = world_out
+  
+  # ---------- merge zone vars ----------
+  world_merge[world_merge$level %in% c("zone", "hillslope")  & world_merge$vars %in% vars_zonehill, c("level","ID","vars","values")] = 
+    merge.data.table(world_out[world_out$level %in% c("zone", "hillslope")  & world_out$vars %in% vars_zonehill, c("vars","level","ID")], 
+                     world_in[world_in$level %in% c("zone", "hillslope")  & world_in$vars %in% vars_zonehill, c("values","vars","level","ID")], 
+                     by = c("level", "ID", "vars"), sort = F, all.x = T)
+  
+  # ---------- merge patch+strata vars ----------
+  world_merge[!is.na(world_merge$famID) & world_merge$vars %in% vars_list, c("famID", "vegparm", "vars", "level","ID","unique_ID","pID","values")] = 
+    merge.data.table(world_out[!is.na(world_out$famID) & world_out$vars %in% vars_list,c("vars","level","ID","unique_ID","famID","pID","vegparm")], 
+                     world_in[!is.na(world_in$famID) & world_in$vars %in% vars_list,c("values","vars","famID","vegparm")], 
+                     by = c("famID", "vegparm", "vars"), sort = F, all.x = T)
+  
+  # ---------- Write output world ----------
+  write_world(world_merge, world_output_filename)
+  
+  return("Success!")
+}
