@@ -13,6 +13,7 @@ build_redefine3(
   patchID = NULL,
   strataID = NULL,
   veg_parm_ID = NULL,
+  redef_in = NULL,
   add = FALSE
 )
 }
@@ -32,6 +33,8 @@ build_redefine3(
 \item{strataID}{Strata IDs to filter}
 
 \item{veg_parm_ID}{Vegetation parameter IDs to filter}
+
+\item{redef_in}{Input redefine file to add to}
 
 \item{add}{Add to existing redefine file (TRUE/FALSE)}
 }

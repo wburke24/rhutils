@@ -9,9 +9,10 @@
 #' @param patchID Patch IDs to filter
 #' @param strataID Strata IDs to filter
 #' @param veg_parm_ID Vegetation parameter IDs to filter
+#' @param redef_in Input redefine file to add to
 #' @param add Add to existing redefine file (TRUE/FALSE)
 #' @export
-build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NULL, std_thin = NULL, patchID = NULL, strataID = NULL, veg_parm_ID = NULL, add = FALSE) {
+build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NULL, std_thin = NULL, patchID = NULL, strataID = NULL, veg_parm_ID = NULL, redef_in = NULL, add = FALSE) {
   # ---------- Check Arguments ----------
   # Either need vars + values or std_thin
   if ((is.null(vars) | is.null(values)) & is.null(std_thin)) {
@@ -34,7 +35,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   }
 
   if (sum(world$values == "-9999") > 2 & !add) {
-    cat("Worldfile already contains -9999 values, if this is a redefine world you are adding to, set add=T, otherwise all undefined values (from this function call) will be set to -9999\n")
+    cat("Worldfile already contains -9999 values, if this is a redefine world you are adding to, set add=T and input as the redef_in, otherwise all undefined values (from this function call) will be set to -9999\n")
   }
 
   # thinning vars
@@ -51,6 +52,13 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   # other_thin_vars = c("cover_fraction", "gap_fraction", "cs.stem_density") # not currently thinning these
   if (!"veg_parm_ID" %in% names(world)) {
     world = world_add_patch_vegparmIDcol(world)
+    if (any(grepl("_", world$veg_parm_ID))) {
+      world$veg_parm_ID1 = sapply(strsplit(world$veg_parm_ID, "_"), function(x) x[1])
+      world$veg_parm_ID2 = sapply(strsplit(world$veg_parm_ID, "_"), function(x) {if(length(x) > 1) {x[2]} else {NA}})
+      world$veg_parm_ID = as.numeric(world$veg_parm_ID1)
+      world$veg_parm_ID2 = as.numeric(world$veg_parm_ID2)
+      world$veg_parm_ID = NULL
+    } 
   }
 
   redef_strata = rep.int(TRUE, length(world$vars))
@@ -58,7 +66,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
   redef_patch = rep.int(TRUE, length(world$vars))
   
   # ---------- Thinning redefine ----------
-  redef_index = NULL
+  redef_index_thin = NULL
   if (!is.null(std_thin)) {
     # filter by veg parm, strata, patch if given ================
     if (!is.null(patchID)) { # this only works if changing patch vars
@@ -72,21 +80,25 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
       redef_strata = world$level == "canopy_strata" & world$ID %in% as.character(strataID)
     }
     if (!is.null(veg_parm_ID)) {
-      redef_veg_strata = world$veg_parm_ID %in% as.character(veg_parm_ID)
+      if ("veg_parm_ID2" %in% names(world)) {
+        redef_veg_strata = world$veg_parm_ID1 %in% as.character(veg_parm_ID) | world$veg_parm_ID2 %in% as.character(veg_parm_ID)
+      } else {
+        redef_veg_strata = world$veg_parm_ID %in% as.character(veg_parm_ID)
+      }
     }
-    redef_index = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% thin_vars))
-    if (length(redef_index) == 0) {
-      redef_index = NULL
+    redef_index_thin = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% thin_vars))
+    if (length(redef_index_thin) == 0) {
+      redef_index_thin = NULL
       cat("No vars to redefine found in worldfile for std thin querry\n")
     }
-    redef_values = as.character(rep.int(std_thin, length(redef_index)))
-    if (!is.null(redef_index)) {
-      world$values[redef_index] = redef_values
+    redef_values = as.character(rep.int(std_thin, length(redef_index_thin)))
+    if (!is.null(redef_index_thin)) {
+      world$values[redef_index_thin] = redef_values
     }
   }
 
   # ---------- Find and Replace Vars ----------
-  replace_index_all = NULL
+  redef_index_byvar = NULL
   if (!is.null(vars) & !is.null(values)) {
     # if only 1 value given but multiple vars to replace, repeat value
     if (length(vars) > 1 & length(values) == 1) {
@@ -102,7 +114,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     if (!is.null(veg_parm_ID)) {
       redef_veg_strata = world$veg_parm_ID %in% as.character(veg_parm_ID)
     }
-    replace_index_all = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% vars))
+    redef_index_byvar = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% vars))
     
     for (i in 1:length(vars)) {
       replace_index = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% vars[i]))
@@ -121,12 +133,15 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     }
   }
 
-  if ( (is.null(redef_index) || length(redef_index) == 0) & (is.null(replace_index_all) || length(replace_index_all) == 0) ) {
+  if ( (is.null(redef_index_thin) || length(redef_index_thin) == 0) & (is.null(redef_index_byvar) || length(redef_index_byvar) == 0) ) {
     cat("No vars matched criteria, all set to -9999.\n")
   }
 
   if (add) {
     cat("Adding to existing redefine file values. Assumes undefined values are already -9999\n")
+    redef_in$values[redef_index_thin] = world$values[redef_index_thin]
+    redef_in$values[redef_index_byvar] = world$values[redef_index_byvar]
+    world = redef_in
   } else {
     cat("Replacing all non-redefined values with -9999.\n")
     # ---------- Replace all other values w -9999 ----------
@@ -154,7 +169,7 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
       "canopy_strata_n_basestations",
       "canopy_strata_basestation_ID"
     )
-    keep_index = c(unique(c(redef_index, replace_index_all)), which(world$vars %in% keep_vars))
+    keep_index = c(unique(c(redef_index_thin, redef_index_byvar)), which(world$vars %in% keep_vars))
     keep_index = sort(keep_index)
     no_change_vars = c(1:nrow(world))[-keep_index]
     world$values[no_change_vars] = "-9999"
