@@ -100,7 +100,7 @@ defpars_csv2list = function(defpar_csv) {
 write_param_table = function(input_def_pars, outfile_basename = "all_def_changes") {
   vars_defs = data.frame(Variable = sapply(input_def_pars, "[[", 2), Def_file = sapply(input_def_pars, "[[", 1))
   param_table = cbind(vars_defs, t(sapply(input_def_pars, "[[", 3)))
-  names(param_table)[3:length(param_table[1,])] = paste0("Run_",c(1:(length(param_table[1,])-2)))
+  names(param_table)[3:length(param_table[1,])] = paste0("ParSetID_",c(1:(length(param_table[1,])-2)))
   outname = paste0(outfile_basename,"_" ,format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".params"  )
   write.csv(param_table, file = outname)
   cat("Wrote table of parameter changes to: ", outname)
@@ -135,30 +135,9 @@ write_updated_def_files = function(input_def_pars, input_hdr, filename_ext = NUL
 defpars_list2df = function (defpars) {
   df = data.frame(Variable = sapply(defpars, "[[", 2), Def_file = sapply(defpars, "[[", 1))
   df = cbind(df, t( unname(as.data.frame(lapply(defpars, "[[", 3))) ))
-  names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
+  names(df)[3:length(df[1, ])] = paste0("ParSetID_", c(1:(length(df[1, ]) - 2)))
   return(df)
 }
-
-# # ================================================================================
-# #' Convert defpar data frame to list
-# #'
-# #' @param defpar_df Default parameter data frame
-# #' @export
-# defpars_df2list = function (defpar_df) {
-    
-#   pars_list = list()
-#   for (i in 1:nrow(defpar_df)) {
-#     par_name = defpar_df[i,1]
-#     par_a = defpar_df[i,2]
-#     par_b = defpar_df[i,3]
-#     pars_list[[i]] = list("Def_file" = def_file, "Variable" = par_name, "Value" = c(par_a, par_b))
-#   }
-  
-#   df = data.frame(Variable = sapply(defpar_df, "[[", 2), Def_file = sapply(defpar_df, "[[", 1))
-#   df = cbind(df, t( unname(as.data.frame(lapply(defpar_df, "[[", 3))) ))
-#   names(df)[3:length(df[1, ])] = paste0("Run_", c(1:(length(df[1, ]) - 2)))
-#   return(defpar_list)
-# }
 
 # ================================================================================
 # transpose the defpar df so parameters are the columns, and can be set to correct type num vs chr
@@ -167,8 +146,8 @@ defpars_list2df = function (defpars) {
 #' @param defpar_df Definition parameter data frame
 #' @export
 defpar_df_t2parcols = function(defpar_df) {
-  df_t = as.data.frame(t(defpar_df[, names(defpar_df) != c("Parameter","File")]))
-  colnames(df_t) = paste0(defpar_df$Parameter,"__",defpar_df$File)
+  df_t = as.data.frame(t(defpar_df[, names(defpar_df) != c("Variable","Def_file")]))
+  colnames(df_t) = paste0(defpar_df$Variable,"__",defpar_df$Def_file)
 
   # if all are numeric, switch
   validnum = sapply(df_t,function(X) {all(!is.na(suppressWarnings(as.numeric(X)))) } )
@@ -567,7 +546,6 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
     out$SRC <- src
 
     # ex
-    # boot functions accessed via ::
     n <- 100
     X <- data.frame(X1 = runif(n, 0.5, 1.5),
                     X2 = runif(n, 1.5, 4.5),

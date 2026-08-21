@@ -5,7 +5,7 @@
 #' @param out_name Base name of output pdf. Unique timedate is added to this string. If left null 'plots' is used.
 #' @param out_path Path to folder where pdf will be written. If doesn't exist, will be created.
 #' @param pattern Text pattern to use when searching for output files. Default is '_basin'.
-#' @param step Time step for plots. Only options are 'monthly' or 'yearly'.
+#' @param step Time step for plots. Options are 'daily', 'monthly', or 'yearly'. Default is 'monthly'.
 #' @param spatial_agg Optional spatial aggregation level. One of 'basin' (fully aggregated spatially), 'hill', 'zone', 'patch', 'stratum' (no spatial aggregation). If NULL (default) data is aggregated to basin.
 #' @param worldfile Optional worldfile for veg ID spatial aggregation, required if spatial_agg is not null and set to veg_parm_ID.
 #' @param pdfwidth Width for output pdf in inches.
@@ -64,19 +64,22 @@ plotpdf_allvars = function(out_dir,
   }
 
   # ======================================== READ + AGGREGATE DATA ========================================
-  if (step == "monthly") {
+  if (step == "daily") {
+    timevars = c("year", "month", "day")
+    cat("Using daily data (no temporal aggregation).\n")
+  } else if (step == "monthly") {
     timevars = c("year", "month")
     cat("Aggregating to monthly.\n")
   } else if (step == "yearly") {
     timevars = c("year")
     cat("Aggregating to yearly.\n")
   } else {
-    stop("Only valid steps are 'monthly' or 'yearly'")
+    stop("Only valid steps are 'daily', 'monthly', or 'yearly'")
   }
   aggvars = timevars
   # Summary plot when runs are too many
-  time_var <- if (step == "monthly") "year_month" else "year"
-  time_var_nice <- if (step == "monthly") "Year - Month" else "Year"
+  time_var <- if (step == "daily") "date" else if (step == "monthly") "year_month" else "year"
+  time_var_nice <- if (step == "daily") "Date" else if (step == "monthly") "Year - Month" else "Year"
   # spatial aggreagation
   if (!is.null(spatial_agg)) {
     if (length(spatial_agg) != 1 | !any(spatial_agg %in% c("basin", "hill", "zone", "patch", "stratum", "veg_parm_ID"))) {

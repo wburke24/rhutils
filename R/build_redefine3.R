@@ -34,8 +34,8 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
     world = worldfile
   }
 
-  if (sum(world$values == "-9999") > 2 & !add) {
-    cat("Worldfile already contains -9999 values, if this is a redefine world you are adding to, set add=T and input as the redef_in, otherwise all undefined values (from this function call) will be set to -9999\n")
+  if (sum(world$values == "-9999") > 2) {
+    cat("Worldfile already contains -9999 values, if this is a redefine world you are adding to, set add=T and input redefine dataframe as the redef_in arg.\n")
   }
 
   # thinning vars
@@ -112,14 +112,18 @@ build_redefine3 = function(worldfile, out_file = NULL, vars = NULL, values = NUL
       redef_strata = world$level == "canopy_strata" & world$ID %in% as.character(strataID)
     }
     if (!is.null(veg_parm_ID)) {
-      redef_veg_strata = world$veg_parm_ID %in% as.character(veg_parm_ID)
+      if ("veg_parm_ID2" %in% names(world)) {
+        redef_veg_strata = world$veg_parm_ID1 %in% as.character(veg_parm_ID) | world$veg_parm_ID2 %in% as.character(veg_parm_ID)
+      } else {
+        redef_veg_strata = world$veg_parm_ID %in% as.character(veg_parm_ID)
+      }
     }
     redef_index_byvar = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% vars))
     
     for (i in 1:length(vars)) {
       replace_index = which(redef_patch & redef_strata & redef_veg_strata & (world$vars %in% vars[i]))
 
-      if (length(replace_index) == 0) {stop(noquote("var to replace can't be found in worldfile.\n")) }
+      if (length(replace_index) == 0) {stop(noquote(paste("Var", vars[i], "to replace can't be found in worldfile.\n"))) }
       # if unique values for every instance of var to be replaces were given, do nothing, otherwise repeat to get enough replacement values
       if (length(values[i]) != length(replace_index)) {
         new_value = rep(values[i], length(replace_index)/length(values[i]))

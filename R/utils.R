@@ -355,3 +355,13 @@ find_most_recent_output_dir = function(basedir = "output", pattern = NULL) {
   cat("Directory creation time: ", as.character(dir_info$ctime[which.max(dir_info$ctime)]), "\n", sep = "")
   return(most_recent_dir)
 }
+
+
+# clean_lib_locks <- function(lib = .libPaths()[1]) {
+#   locks <- list.files(lib, pattern = "^00LOCK", full.names = TRUE, recursive = TRUE)
+#   if (length(locks)) {
+#     message("Removing stale lock folders:\n", paste(" -", locks, collapse = "\n"))
+#     unlink(locks, recursive = TRUE, force = TRUE)
+#   }
+#   invisible(locks)
+# }

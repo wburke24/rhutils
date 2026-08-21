@@ -37,68 +37,90 @@ pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_table
 #' @param eval Data frame of evaluation metrics
 #' @param stat Statistic name used for ordering
 #' @export
-def_changes_by_evaldf = function(defpar_df, eval, stat = "NSE") {
-  # assume that eval is already ordered by calibration run id
+def_changes_by_evaldf = function(defpar_df, eval_df, order_by_stat = TRUE, stat = "NSE") {
+
+  # check that defpar_df has only Variable, Def_file
+  if (!all(c("Variable", "Def_file") %in% names(defpar_df))) {
+    stop("defpar_df must contain columns 'Variable' and 'Def_file'.")
+  }  
+  # check that the defpar_df and eval have the same number of runs
+  if (ncol(defpar_df) - 2 != nrow(eval_df)) {
+    stop("defpar_df and eval_df must have the same number of runs (columns in defpar_df minus 2 for Variable and Def_file, and rows in eval_df).")
+  }
 
   defpar_parfile = defpar_df[,c("Variable","Def_file")]
   defpar_df_pars = defpar_df[, !names(defpar_df) %in% c("Variable","Def_file")]
-  # double check they're in order, jk they always should be
-  # names(defpar_df_pars) = names(defpar_df_pars)[order(as.numeric(gsub("Run_","",names(defpar_df_pars))))]
-
+  
   # remove pars that don't vary
   parsvary = apply(defpar_df_pars,1,FUN = function(X){length(unique(X)) > 1})
   defpar_parfile = defpar_parfile[parsvary,]
   defpar_df_pars = defpar_df_pars[parsvary,]
 
-  # take the non-name cols of the eval df, transpose, and put above the parameters
-  # for now, use cols for names, not rownames
-  evaltrans = unname(data.frame(t(eval[,-1])))
+  # new version - use the ParSetID numbers, which are the trailing digits of the defpar_df column names and the value in eval$ParSetID
+  # get the ParSetID from the defpar_df column names
+  defpar_parsetIDs = as.numeric(stringr::str_extract(names(defpar_df_pars), "(?<=_)\\d+$"))
+  if (any(is.na(defpar_parsetIDs))) {
+    stop("Could not extract ParSetID from defpar_df column names. Column names must end with '_<ParSetID>'.")
+  }
+  if (!"ParSetID" %in% names(eval_df)) {
+    stop("eval dataframe must contain a 'ParSetID' column.")
+  }
+  # get the ParSetID from the eval df
+  eval_parsetIDs = eval_df$ParSetID
+  # check that they match
+  if (!all(sort(defpar_parsetIDs) == sort(eval_parsetIDs))) {
+    stop("ParSetID values in defpar_df and eval do not match.")
+  }
+  # order the eval df by ParSetID
+  eval_ordered = eval_df[match(defpar_parsetIDs, eval_parsetIDs),]
+  # remove the ParSetID column from eval_ordered
+  # eval_ordered_noparset = eval_ordered[, !names(eval_ordered)%in% c("ParSetID")]
+  # eval_ordered_noparset <- eval_ordered[, .SD, .SDcols = !"ParSetID"]
+
+  # transpose the eval_ordered_noparset
+  evaltrans = unname(data.frame(t(eval_ordered)))
   names(evaltrans) = names(defpar_df_pars)
   statnames = rownames(evaltrans)
   rownames(evaltrans) = NULL
-  parsstats = rbind( evaltrans, defpar_df_pars)
+  parsstats = rbind(evaltrans, defpar_df_pars)
 
   # combine the names, duplicate the stat for thw two cols
   comb_names = rbind(data.frame(Variable = statnames,Def_file = statnames), defpar_parfile)
 
   # order the stats and pars by the selected stat
-  parsstats = parsstats[,order(as.numeric(unlist(unname(parsstats[comb_names$Variable == stat,]))), decreasing = T)]
-
+  if (order_by_stat) {
+    if (stat %in% statnames) {
+      parsstats = parsstats[,order(as.numeric(unlist(unname(parsstats[comb_names$Variable == stat,]))), decreasing = TRUE)]
+    } else {
+      warning(paste0("Selected stat '",stat,"' not found in the evaluation metrics. Not ordering by stat."))
+    }
+  }
   comb_parsstats = cbind(comb_names, parsstats)
 
-  # if (stat == "NSE") {
-  #   tmp = cbind(inputpars[,c(1,2)], inputpars[,-c(1,2)][,order(eval$NSE, decreasing = T)])
-  #   chgvars = tmp[ apply(tmp[,-c(1,2)],1,FUN = function(X){length(unique(X))}) > 1, ]
-  #   chgvars_stat = rbind(unname(c("NSE", "NSE", signif(unlist(eval[order(eval$NSE, decreasing = T),"NSE"]),3 ))),
-  #                        unname(c("PBIAS", "PBIAS", signif(unlist(eval[order(eval$PBIAS, decreasing = T),"PBIAS"]),3 ))),
-  #                        chgvars)
-  # }
-  # rownames(chgvars_stat) = NULL
-  # return(chgvars_stat)
-
   return(comb_parsstats)
-
 }
 
-# ================================================================================
-#' Summarize definition changes ordered by evaluation metric
-#'
-#' @param out_dir Output directory containing parameter tables
-#' @param eval Data frame of evaluation metrics
-#' @param stat Statistic name used for ordering
-#' @export
-def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
-  inputpars = read_pars_table(out_dir)
-  if (stat == "NSE") {
-    tmp = cbind(inputpars[,c(1,2)], inputpars[,-c(1,2)][,order(eval$NSE, decreasing = T)])
-    chgvars = tmp[ apply(tmp[,-c(1,2)],1,FUN = function(X){length(unique(X))}) > 1, ]
-    chgvars_stat = rbind(unname(c("NSE", "NSE", signif(unlist(eval[order(eval$NSE, decreasing = T),"NSE"]),3 ))),
-                         unname(c("PBIAS", "PBIAS", signif(unlist(eval[order(eval$PBIAS, decreasing = T),"PBIAS"]),3 ))),
-                         chgvars)
-  }
-  rownames(chgvars_stat) = NULL
-  return(chgvars_stat)
-}
+
+
+# # ================================================================================
+# #' Summarize definition changes ordered by evaluation metric
+# #'
+# #' @param out_dir Output directory containing parameter tables
+# #' @param eval Data frame of evaluation metrics
+# #' @param stat Statistic name used for ordering
+# #' @export
+# def_changes_by_eval = function(out_dir, eval, stat = "NSE") {
+#   inputpars = read_pars_table(out_dir)
+#   if (stat == "NSE") {
+#     tmp = cbind(inputpars[,c(1,2)], inputpars[,-c(1,2)][,order(eval$NSE, decreasing = T)])
+#     chgvars = tmp[ apply(tmp[,-c(1,2)],1,FUN = function(X){length(unique(X))}) > 1, ]
+#     chgvars_stat = rbind(unname(c("NSE", "NSE", signif(unlist(eval[order(eval$NSE, decreasing = T),"NSE"]),3 ))),
+#                          unname(c("PBIAS", "PBIAS", signif(unlist(eval[order(eval$PBIAS, decreasing = T),"PBIAS"]),3 ))),
+#                          chgvars)
+#   }
+#   rownames(chgvars_stat) = NULL
+#   return(chgvars_stat)
+# }
 
 # ================================================================================
 #' Compute parameter ranges for top-performing runs

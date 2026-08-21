@@ -4,14 +4,14 @@
 \alias{def_changes_by_evaldf}
 \title{Combine definition changes with evaluation statistics}
 \usage{
-def_changes_by_evaldf(defpar_df, eval, stat = "NSE")
+def_changes_by_evaldf(defpar_df, eval_df, order_by_stat = TRUE, stat = "NSE")
 }
 \arguments{
 \item{defpar_df}{Data frame of definition parameter changes}
 
-\item{eval}{Data frame of evaluation metrics}
-
 \item{stat}{Statistic name used for ordering}
+
+\item{eval}{Data frame of evaluation metrics}
 }
 \description{
 Combine definition changes with evaluation statistics

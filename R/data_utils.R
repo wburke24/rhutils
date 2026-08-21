@@ -91,8 +91,13 @@ get_patch_daily = function(out_dir) {
 agg_dyn = function(DT, name, aggvars, vars) {
   out = DT[, lapply(.SD, mean), by=aggvars, .SDcols = vars]
   out$run = name
-  out$year_month = zoo::as.yearmon(paste0(out$year,"-", out$month))
-  out$ym_ind = as.numeric(out$year_month)
+  if ("year" %in% aggvars & "month" %in% aggvars & "year" %in% names(out) & "month" %in% names(out)) {
+    out$year_month = zoo::as.yearmon(paste0(out$year,"-", out$month))
+    out$ym_ind = as.numeric(out$year_month)
+  }
+  if(all(c("year","month", "day") %in% aggvars) & all(c("year","month", "day") %in% names(out))) {
+    out$date = lubridate::ymd(paste(out$year, out$month, out$day, sep = "-"))
+  }
   return(out)
 }
 

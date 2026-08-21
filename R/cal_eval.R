@@ -49,8 +49,14 @@ cal_eval = function(Qsim, Qobs, plots = F, plot_path = "plots", plot_name = "cal
     cat("Max simulated streamflow is > 1 - assuming streamflow is already in mm, no conversion done.\n")
   }
 
-  run_IDs = unique(Qsim$run)
-  run_IDs = run_IDs[order(as.numeric(stringr::str_extract(run_IDs, "(?<=_)\\d+$")))]
+  # New Terminology:
+  # Run ID = complete run identifier, e.g. "Ward_cal_RunID1"
+  # ParSetID = unique parameter set identifier WITHIN a run, e.g. "myrun_RUNID1_ParSetID101"
+  # ParSetID will be the trailing digits per run, and either no prefix text or ParSetID
+  # Run ID will always require RunIDX to limit confusion
+
+  run_names = unique(Qsim$run)
+  run_names = run_names[order(as.numeric(stringr::str_extract(run_names, "(?<=_)\\d+$")))]
 
   if (monthly) {
     Qsim = aggregate(Qsim$streamflow, by = list(Qsim$run, Qsim$year, Qsim$month), FUN = mean)
@@ -82,9 +88,21 @@ cal_eval = function(Qsim, Qobs, plots = F, plot_path = "plots", plot_name = "cal
     return(list(i, nse, nse_log, pbias, rmse, r))
   }
 
-  eval_list = lapply(run_IDs, FUN = eval_fun)
+  eval_list = lapply(run_names, FUN = eval_fun)
   eval_df = data.table::rbindlist(eval_list)
   names(eval_df) = c("run", "NSE", "NSElog", "PBIAS", "RMSE", "R2")
+  
+  # try to parse/extract parsetid from run name, assuming it is the trailing digits after an underscore
+  ParSetID = as.numeric(stringr::str_extract(eval_df$run, "(?<=_)\\d+$"))
+  if (any(is.na(ParSetID))) {
+    if (length(unique(ParSetID)) == 1) {
+      cat("One unique parameter set found, missing ParSetID - setting ParSetID to 1\n", sep = "")
+      ParSetID[is.na(ParSetID)] = 1
+    } else {
+      cat("Warning: Could not extract ParSetID from run names. ParSetID will be NA for some runs.\n")
+    }
+  }
+  eval_df$ParSetID = ParSetID
 
   eval_df = eval_df[order(eval_df$NSE, decreasing = T), ]
   best_eval = eval_df[1, ]
@@ -100,7 +118,7 @@ cal_eval = function(Qsim, Qobs, plots = F, plot_path = "plots", plot_name = "cal
       paste0(plot_name, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf")
     )
 
-    if (length(run_IDs) > 10) {
+    if (length(run_names) > 10) {
       plot_sim_dt = data.table::as.data.table(plot_sim)
       plot_summary = plot_sim_dt[, .(
         streamflow_mean = mean(streamflow, na.rm = TRUE),
