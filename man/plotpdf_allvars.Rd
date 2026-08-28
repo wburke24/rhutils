@@ -19,7 +19,8 @@ plotpdf_allvars(
   output_images = F,
   run_limit = 25,
   auto_vars = T,
-  runs = NULL
+  runs = NULL,
+  normalize_yearly = F
 )
 }
 \arguments{
@@ -31,7 +32,7 @@ plotpdf_allvars(
 
 \item{pattern}{Text pattern to use when searching for output files. Default is '_basin'.}
 
-\item{step}{Time step for plots. Only options are 'monthly' or 'yearly'.}
+\item{step}{Time step for plots. Options are 'daily', 'monthly', or 'yearly'. Default is 'monthly'.}
 
 \item{spatial_agg}{Optional spatial aggregation level. One of 'basin' (fully aggregated spatially), 'hill', 'zone', 'patch', 'stratum' (no spatial aggregation). If NULL (default) data is aggregated to basin.}
 

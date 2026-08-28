@@ -17,7 +17,7 @@ rhessysIO2pronghorn(
   input_tec_data = NULL,
   output_filter = NULL,
   filelist = NULL,
-  transfer_method = "scp",
+  transfer_method = "rsync",
   rsa_loc = "~/rsa_key"
 )
 }

@@ -28,15 +28,26 @@ parallel_runs = function(run_cmds, n_cores = NULL) {
 #' @param x list of rhessys run outputs from run_rhessys_multi
 #' @export
 rh_out_list_flatten = function(x) {
+  if (!is.list(x)) {
+    stop("x must be a list of rhessys run outputs.\n")
+  }
+  # if (!all(sapply(x, function(x) {is.list(x) && all(c("command", "generated_files") %in% names(x))}))) {
+  #   stop("x must be a list of rhessys run outputs with 'command' and 'generated_files' elements.\n")
+  # }
+
+  if (length(x) == 2 && all(names(x) %in% c("command", "generated_files"))) {
+    return(list(rh_cmds = x$command, rh_file_list = x$generated_files))
+  }
+
   rh_cmd_flat = unlist(lapply(x, function(x) {x$command}), recursive = F)
 
   rh_files_list = lapply(x, function(x) {x$generated_files})
 
   rh_flattened_list <- list(
     def_files     = unlist(lapply(rh_files_list, `[[`, "def_files")),
-    hdr_files     = unlist(lapply(rh_files_list, `[[`, "hdr_file")),
-    tec_files     = unlist(lapply(rh_files_list, `[[`, "tec_file")),
-    outputfilters = unlist(lapply(rh_files_list, `[[`, "output_filter"))
+    hdr_files     = unlist(lapply(rh_files_list, `[[`, "hdr_files")),
+    tec_files     = unlist(lapply(rh_files_list, `[[`, "tec_files")),
+    output_filters = unlist(lapply(rh_files_list, `[[`, "output_filters"))
   )
   # check for non unique files and remove duplicates
   rh_flattened_list <- lapply(rh_flattened_list, function(x) {

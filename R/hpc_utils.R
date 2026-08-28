@@ -161,7 +161,7 @@ rhessysIO2pronghorn = function(
   input_tec_data = NULL,
   output_filter = NULL,
   filelist = NULL,
-  transfer_method = "scp",
+  transfer_method = "rsync",
   rsa_loc = "~/rsa_key"
 ) {
   # ----- input checks -----
@@ -175,7 +175,8 @@ rhessysIO2pronghorn = function(
   }
   #fix output strings and write to file
   rhout_str = rhout_write_for_hpc(rhout, name, rh_bin_replace = rh_bin_replace, prefix_cmd = prefix_cmd)
-  # make list of changed files
+
+  # make list of changed files - list_rh_input_files is backup now
   if (is.null(filelist) & !is.null(input_rhessys)) {
     filelist = list_rh_input_files(
       input_rhessys,
@@ -184,6 +185,17 @@ rhessysIO2pronghorn = function(
       input_tec_data,
       output_filter
     )
+  } else {
+    files_to_copy = unique(c(
+      input_rhessys$world_file,
+      input_rhessys$flow_file,
+      filelist$tec_files,
+      filelist$output_filters,
+      filelist$hdr_files,
+      filelist$def_files,
+      rhout_str
+    ))
+    files_to_copy = files_to_copy[file.exists(files_to_copy)]
   }
 
   if (transfer_method == "scp") {
@@ -222,7 +234,7 @@ rhessysIO2pronghorn = function(
           "scp -i ",
           rsa_loc,
           " -p ",
-          paste(filelist$outputfilters, collapse = " "),
+          paste(filelist$output_filters, collapse = " "),
           " ",
           usr,
           dest,
@@ -269,14 +281,6 @@ rhessysIO2pronghorn = function(
     return(rhout_str)
   } else if (transfer_method == "rsync") {
     # Match SCP behavior: transfer tec, output filters, headers, defs, and generated run script.
-    files_to_copy = unique(c(
-      filelist$tec_files,
-      filelist$outputfilters,
-      filelist$hdr_files,
-      filelist$def_files,
-      rhout_str
-    ))
-    files_to_copy = files_to_copy[file.exists(files_to_copy)]
 
     # Ensure remote dirs exist (create under dest for the directories being transferred)
     remote_dirs = paste(unique(dirname(files_to_copy)), collapse = " ")
@@ -345,7 +349,6 @@ collapse_rh_input_files_list = function(filelist) {
   }
   return(filelist_new)
 }
-
 
 #' Test SSH connectivity to pronghorn via WSL
 #'

@@ -32,7 +32,8 @@ plotpdf_allvars = function(out_dir,
                            output_images = F, # if TRUE, also outputs a foldfer of individual pngs for each variable in addition to the pdf
                            run_limit = 25,
                            auto_vars = T,
-                           runs = NULL
+                           runs = NULL,
+                           normalize_yearly = F
                           ) {
   
   # =========================== CHECKS ========================================
@@ -152,6 +153,14 @@ plotpdf_allvars = function(out_dir,
       aggvars2= names(DT)[!names(DT) %in% c(vars, "basinID", "hillID", "zoneID", "patchID", "stratumID")]
       DT = DT[, lapply(.SD, mean), by = aggvars2, .SDcols = vars]
     } 
+  }
+
+  if (normalize_yearly) {
+    if (step != "yearly") {
+      warning("normalize_yearly is only valid for yearly step.")
+    } else {
+      DT = DT[, lapply(.SD, function(x) x / 365.25), by = c("run", spatial_agg_vars,"year"), .SDcols = vars]
+    }
   }
   
   # ======================================== PLOT & WRITE TO PDF ========================================
