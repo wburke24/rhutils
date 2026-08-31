@@ -35,7 +35,7 @@ rh_out_list_flatten = function(x) {
   #   stop("x must be a list of rhessys run outputs with 'command' and 'generated_files' elements.\n")
   # }
 
-  if (length(x) == 2 && all(names(x) %in% c("command", "generated_files"))) {
+  if (length(x) == 2 && !is.null(names(x)) && names(x)[1] == "command" && names(x)[2] == "generated_files") {
     return(list(rh_cmds = x$command, rh_file_list = x$generated_files))
   }
 
