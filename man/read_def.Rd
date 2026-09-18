@@ -4,10 +4,12 @@
 \alias{read_def}
 \title{Read a definition file}
 \usage{
-read_def(def_file)
+read_def(def_file, no_comments = TRUE)
 }
 \arguments{
 \item{def_file}{Path to a RHESSys definition file}
+
+\item{no_comments}{Logical; if TRUE, exclude comments from the output}
 }
 \description{
 Read a definition file

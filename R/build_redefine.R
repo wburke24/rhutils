@@ -178,7 +178,7 @@ build_redefine = function(worldfile,
     # cat("No vars matched criteria, all set to -9999.\n")
     stop("No vars matched criteria, aborting.\n")
   }
-  
+  dput(sort(2^c(1:20), T))
   # Report filter summary
   cat(sprintf("  Found %d rows to redefine across %d variables\n", 
               length(redef_index_byvar), length(vars)))

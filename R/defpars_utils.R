@@ -5,15 +5,19 @@
 #' Read a definition file
 #'
 #' @param def_file Path to a RHESSys definition file
+#' @param no_comments Logical; if TRUE, exclude comments from the output
 #' @export
-read_def = function(def_file) {
+read_def = function(def_file, no_comments = TRUE) {
   def_read = readLines(def_file, warn = FALSE)
   def_read = def_read[nchar(def_read) > 0]
   def_table_list =  strsplit(trimws(def_read), "\\s+")
   def_table <- as.data.frame(do.call(rbind, lapply(def_table_list, `length<-`, 2)), stringsAsFactors = FALSE)
-  names(def_table)[1:2] = c("pars", "names")
+  names(def_table)[1:2] = c("Value", "Name")
   comments = lapply(def_table_list, function(x)ifelse(length(x) > 2, paste(x[3:length(x)], collapse = " "), NA ) )
   def_table_out = data.frame(def_table, comments = unlist(comments))
+  if (no_comments) {
+    def_table_out = def_table_out[, c("Value", "Name")]
+  }
   return(def_table_out)
 }
 

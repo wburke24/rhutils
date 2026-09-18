@@ -47,6 +47,20 @@ output_doc_carbon_many = c(
 
 output_vars_set1 = c("patch.soil_cs.totalc", "patch.soil_ns.totaln", "patch.lai", "patch.rootzone.depth", "patch.rz_storage","patch.unsat_storage", "stratum.cs.totalc", "stratum.cs.leafc", "stratum.cs.cpool", "stratum.cs.live_stemc", "stratum.cs.dead_stemc", "patch.evaporation","patch.evaporation_surf","patch.transpiration_unsat_zone","patch.transpiration_sat_zone","stratum.epv.height")
 
+# ============================ FOR MONTHLY AND YEARLY ONLY ==========================
+# this should work for both monthly and yearly, the outputtable vars are mostly the same
+outvars_stratum_monthly = c("stratum.totalc", "stratum.stemc", "stratum.leafc", "stratum.rootc", "stratum.cpool", "stratum.height", "stratum.lai", "stratum.rootzone_depth", "stratum.gpsn", "stratum.length")
+# these vars may not exist at daily. Length is the number of days per month/year - you will need to normalize using that.
+
+outvars_stratum_monthly_all = c("stratum.totalc", "stratum.stemc", "stratum.leafc", "stratum.rootc", "stratum.cpool", "stratum.height", "stratum.lai", "stratum.rootzone_depth", "stratum.gpsn", "stratum.length",
+  "stratum.gpsn", "stratum.resp", "stratum.lai", "stratum.height", "stratum.lwp", "stratum.minNSC",
+  "stratum.leafc", "stratum.rootc", "stratum.stemc", "stratum.cpool", "stratum.totalc",
+  "stratum.total_plantc", "stratum.totaln", "stratum.total_plantn",
+  "stratum.fe_prop_c_consumed","stratum.fe_prop_c_mortality","stratum.fe_prop_c_mortality_leaf",
+  "stratum.rootzone_depth","stratum.length"
+)
+
+
 cat("Defined output variable aliases:\n")
 cat("output_vars_soils\n")
 cat("output_vars_streamflowcal\n")
