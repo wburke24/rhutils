@@ -15,7 +15,8 @@ transfer_to_hpc(
   transfer_method = "rsync",
   ssh_key = "~/rsa_key",
   submit_job = FALSE,
-  job_script = NULL
+  job_script = NULL,
+  cmd_file_path = "scripts/runcmds/"
 )
 }
 \arguments{
@@ -38,10 +39,11 @@ generated_files output of run_rhessys_single)}
 
 \item{ssh_key}{Path to SSH private key (default: "~/rsa_key")}
 
-\item{submit_job}{Logical; if TRUE, submits the run script to HPC job scheduler
-after file transfer (requires run script at remote location)}
+\item{submit_job}{Logical; if TRUE, submits the run script to HPC job scheduler after file transfer (requires run script at remote location)}
 
 \item{job_script}{Remote path to job submission script (e.g., "./scripts/run_dyn_omp.sh")}
+
+\item{cmd_file_path}{Character. Directory and/or base filename for command file. If only a directory (ends with "/"), name will be used. Datetime will be appended to prevent overwriting. Default: "scripts/" creates scripts/name_runcmds_TIMESTAMP.txt}
 }
 \value{
 Character vector containing path(s) to remote run command file(s)

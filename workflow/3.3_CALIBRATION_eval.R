@@ -1,93 +1,71 @@
-# calibration_eval
+# ============================== 3.3 CALIBRATION EVAL + NEXT ITERATION ==============================
+# Evaluate one batch against observed streamflow, compute sensitivity, log the iteration, and build the
+# narrowed ranges for the next batch (newpars_out, picked up by 3.1).
+# Adapted from the Ward project (CARB/Ward/R/3.2_CALIBRATION.R).
 library(RHESSysIOinR)
 library(rhutils)
-library(hydroGOF)
-library(tidyverse)
-options(scipen = 9999)
 
-out_dir = "output/Ward_msr_cal2024-04-08--12-50-05/"
-# ============================== Inputs ==============================
-obs_source = "clim/WARD_C_AT_HWY_89_NR_TAHOE_PINES_CA_1972_2022"
+name = "MYSITE_soil_cal"
+out_dir = find_most_recent_output_dir()
+obs_source = "clim/MYSITE_observed_streamflow" # needs Date (Date) and Flow_mmd (mm/day) columns
 
-# ============================== Cal Metrics ==============================
-Qobs = fread(obs_source) # CHECK IF IN MM
-sim_DT = get_basin_daily(out_dir)
-fixQ = T
-if (fixQ){
-  sim_DT$streamflow = sim_DT$streamflow  + sim_DT$base_flow
+runid = find_runID(out_dir, numeric = TRUE)
+load(paste0("robj/", name, "_RunID", runid, ".RData"))
+n_sets = length(input_def_pars[[1]][[3]])
+
+# -------------------- Check output --------------------
+# missing/truncated runs (failed RHESSys runs) are flagged here and again in cal_eval
+run_check = check_cal_outputs(out_dir, expected_ids = seq_len(n_sets))
+
+# -------------------- Eval --------------------
+# rows are in ParSetID order (eval_daily[order(-NSE)] to rank); output-filter basin streamflow is in m
+eval_daily = cal_eval(Qsim = out_dir, Qobs = obs_source, plots = TRUE, sim_units = "m")
+eval_mn = cal_eval(Qsim = out_dir, Qobs = obs_source, monthly = TRUE, sim_units = "m")
+
+# fixed obs mean (same gauge/period every iteration) so composite scores are comparable across iterations
+obs_mean = mean(data.table::fread(obs_source)$Flow_mmd, na.rm = TRUE)
+eval_daily$composite = compute_composite_score(eval_daily, obs_mean = obs_mean)
+
+# -------------------- Sensitivity --------------------
+input_def_pars_varied = get_only_varied_defpars_list(input_def_pars)
+parstable = defpars_list2df(input_def_pars_varied)
+sens = cal_defpar_sens(out_dir = out_dir, obs_source = obs_source, input_def_pars = input_def_pars_varied, sim_units = "m")
+
+# -------------------- Log + progress --------------------
+log_calibration_iteration(iteration = runid, eval_df = eval_daily, current_ranges = input_def_pars_varied, sens = sens)
+plot_calibration_progress()
+suggest_next_iteration()
+
+# -------------------- Next iteration --------------------
+# behavioral (top 10%) min/max +- padding; parameters with |SRC| < sens_thresh are frozen at the best set's value
+newpars = narrow_calibration_ranges(
+  parstable = parstable,
+  eval_df = eval_daily,
+  current_pars_cal = input_def_pars_varied,
+  sens = sens,
+  pad_pct = 0.25
+)
+defpars_list2df(newpars)
+
+# summary of the best 10% by any metric (direction handled: RMSE low, PBIAS near 0)
+par_ranges_by_stat_pctle(input_def_pars_varied, eval_daily, stat = "composite", pctle = 0.1)
+par_ranges_by_stat_pctle(input_def_pars_varied, eval_daily, stat = "PBIAS", pctle = 0.1)
+
+# sample the next batch - 3.1 uses newpars_out if it exists
+newpars_out = IOin_def_pars_latin_hypercube(newpars, n = 300)
+# newpars_out = qmc_par_sample(newpars, n = 256)
+
+# perturb around the best set instead
+# best = defpar_extract_by_ParSetID(input_def_pars_varied, eval_daily$ParSetID[which.max(eval_daily$composite)])
+# newpars_out = IOin_def_pars_simple(best, n = 100, pct_range = 0.1)
+
+# -------------------- Sensitivity pooled over several batches --------------------
+multirun_sens = FALSE
+if (multirun_sens) {
+  out_dirs = c("output/CAL_RunID1_rh_out_...", "output/CAL_RunID2_rh_out_...")
+  deflist = lapply(out_dirs, function(d) {
+    load(paste0("robj/", name, "_RunID", find_runID(d, numeric = TRUE), ".RData"))
+    input_def_pars # full list, so parameters held constant in a batch get that batch's value
+  })
+  sens_multi = cal_defpar_sens_multi(out_dirs = out_dirs, obs_source = obs_source, input_def_pars_list = deflist, sim_units = "m")
 }
-eval = cal_eval(sim_DT = sim_DT, Qobs = Qobs)
-eval_mn = cal_eval(sim_DT = sim_DT, Qobs = Qobs, monthly = T)
-
-eval[order(eval$NSE, decreasing = T),]
-eval_mn[order(eval_mn$NSE, decreasing = T),]
-
-defchg_nse = def_changes_by_eval(out_dir, eval_mn)
-defchg_nse
-
-par_ranges_by_pctle = function(defchg_nse, pct = .90) {
-  x = as.numeric(defchg_nse[1,3:ncol(defchg_nse)])
-  pctl = quantile(x = x, probs = pct)
-  tmp = defchg_nse[,3:ncol(defchg_nse)]
-  def90 = tmp[,tmp[1,] >= pctl]
-  ranges = data.frame(min = as.numeric(apply(def90,1,min)), max = as.numeric(apply(def90,1,max)))
-  # signif(ranges, digits = 5)
-  ranges = cbind(variable = defchg_nse[,1],ranges)
-  cat("90th Percentile NSE - Ranges of Pars\n------------------------------------\n")
-  print(ranges)
-  return(ranges)
-}
-ranges = par_ranges_by_pctle(defchg_nse)
-
-IOin_def_pars_sobol()
-sensitivity::sobol()
-
-# ============================== Sensitivity ==============================
-pars_sens(out_dir, eval_mn)
-
-# ================================================================================
-sim_DT = get_basin_daily(out_dir)
-sim_DT_mn = basin_daily2mn(sim_DT)
-sim_DT_mn$month_wy = ifelse(sim_DT_mn$month >= 10, sim_DT_mn$month - 9, sim_DT_mn$month + 3)
-
-# ================================================================================
-
-# compare to obs
-min_comb = max(min(sim_DT$date), min(Qobs$Date))
-max_comb = min(max(sim_DT$date), max(Qobs$Date))
-Qobs_sub = Qobs[Qobs$Date >= min_comb & Qobs$Date <= max_comb,]
-sim_DT_sub = sim_DT[sim_DT$date >= min_comb & sim_DT$date <= max_comb,]
-sim_DT_sub$streamflow = sim_DT_sub$streamflow * 1000
-run_IDs = unique(sim_DT_sub$run)
-run_IDs = run_IDs[order(as.numeric(gsub("[^0-9]+_", "",run_IDs)))] #
-
-sim_DT_sub_mn = aggregate(sim_DT_sub$streamflow, by = list(sim_DT_sub$run, sim_DT_sub$year, sim_DT_sub$month), FUN = mean)
-names(sim_DT_sub_mn) = c("run", "year","month","streamflow")
-Qobs_sub$year = as.numeric(format(Qobs_sub$Date, "%Y"))
-Qobs_sub$month = as.numeric(format(Qobs_sub$Date, "%m"))
-Qobs_sub_mn = aggregate(Qobs_sub$Flow_mmd, by = list(Qobs_sub$year, Qobs_sub$month), FUN = mean)
-names(Qobs_sub_mn) = c("year","month","Flow_mmd")
-Qobs_sub_mn$year_month = as.yearmon(paste0(Qobs_sub_mn$year,"-",Qobs_sub_mn$month))
-sim_DT_sub_mn$year_month = as.yearmon(paste0(sim_DT_sub_mn$year,"-",sim_DT_sub_mn$month))
-
-cal_plot_tsmn_obscompare = sim_DT_sub_mn %>%
-  ggplot() + 
-  geom_line(aes(x = year_month, y = streamflow, color = run), linewidth = 1.5) + 
-  geom_line(data = Qobs_sub_mn, aes(x = year_month, y=Flow_mmd), linewidth = 1) +
-  labs(title = "Streamflow timeseries", x = "Month")
-
-datestr = paste0(gsub( ":", "-", sub( " ", "--", Sys.time())))
-ggsave(filename = paste0("plots/cal_tsmn_obscompare", datestr,".jpg"), cal_plot_tsmn_obscompare, height = 8, width = 12)
-
-
-# ================================================================================
-cal_single_compare = sim_DT_sub_mn %>%
-  ggplot() + 
-  geom_line(aes(x = year_month, y = streamflow, color = "Sim",), linewidth = 1.5) + 
-  geom_line(data = Qobs_sub_mn, aes(x = year_month, y=Flow_mmd, color = "Obs"), linewidth = 1) +
-  scale_color_manual(values = c("Obs" = "black", "Sim"="red")) + 
-  labs(title = "Streamflow timeseries", x = "Month", color = "Run")
-
-datestr = paste0(gsub( ":", "-", sub( " ", "--", Sys.time())))
-ggsave(filename = paste0("plots/cal_single_compare_", datestr,".jpg"), cal_single_compare, height = 8, width = 12)
-# ================================================================================

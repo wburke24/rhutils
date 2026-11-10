@@ -2,13 +2,16 @@
 % Please edit documentation in R/defpars_utils.R
 \name{defpar_rm_dup}
 \alias{defpar_rm_dup}
-\title{Remove duplicate definition parameters}
+\title{Remove duplicate definition parameters (keeps the LAST)}
 \usage{
-defpar_rm_dup(def_list)
+defpar_rm_dup(def_list, verbose = TRUE)
 }
 \arguments{
 \item{def_list}{List of definition parameters}
+
+\item{verbose}{Print the kept/removed report (default TRUE)}
 }
 \description{
-Remove duplicate definition parameters
+Wrapper around \code{RHESSysIOinR::def_pars_rm_dup()}: for each duplicated Def_file + Variable,
+the last entry is kept (same as \code{change_def_file()}) and the kept/removed values are reported.
 }

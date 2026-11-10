@@ -7,7 +7,7 @@
 cal_eval_generic(
   sim,
   obs,
-  value_col,
+  value_col = NULL,
   sim_value_col = NULL,
   obs_value_col = NULL,
   date_col = "date",
@@ -16,13 +16,17 @@ cal_eval_generic(
   eval_monthly = F,
   obs_is_monthly = F,
   echo_best = T,
-  agg_by = "mean"
+  agg_by = "mean",
+  log_eps = 1e-06,
+  sort_by_nse = FALSE
 )
 }
 \arguments{
-\item{sim}{Simulated data data.frame}
+\item{sim}{Simulated data data.frame/data.table, with a \code{run} column, a date column, and the value column.
+For monthly evaluation, \code{year} and \code{month} columns can be used instead of a date column.}
 
-\item{obs}{Observed data data.frame}
+\item{obs}{Observed data data.frame. Daily: date column + value. Monthly (\code{obs_is_monthly}): \code{year},
+\code{month}, and value columns.}
 
 \item{value_col}{Column name to compare (used for both sim and obs unless overridden)}
 
@@ -42,8 +46,22 @@ cal_eval_generic(
 
 \item{echo_best}{Echo best run by NSE (TRUE/FALSE)}
 
-\item{agg_by}{Aggregation method ('mean' or 'sum')}
+\item{agg_by}{Aggregation method to monthly ('mean' or 'sum')}
+
+\item{log_eps}{Constant added to sim and obs before taking logs for NSElog (default 1e-6)}
+
+\item{sort_by_nse}{Logical. Return rows sorted by NSE (best first) instead of by ParSetID. Default FALSE -
+results are in ParSetID order so they line up with parameter tables.}
+}
+\value{
+data.table, one row per run: \code{run, NSE, NSElog, PBIAS, RMSE, R2, ParSetID, n}, where \code{n} is the
+  number of paired days/months used. Ordered by ParSetID (unless \code{sort_by_nse}). Runs with fewer paired
+  values than the others (e.g. a run that crashed partway) are reported in a warning.
 }
 \description{
-Calculates calibration statistics: nse, lognse, pbias, rmse, and r2, at either daily or monthly.
+Calculates calibration statistics (NSE, log NSE, PBIAS, RMSE, R2) for every run in \code{sim}
+against \code{obs}, at either daily or monthly timestep, for any variable/column names.
+Simulated and observed values are paired by \strong{joining on date} (or year-month), so missing
+observations, gaps, and runs of different lengths are handled correctly; only dates present in
+both are used. This is the core used by \code{cal_eval()}.
 }

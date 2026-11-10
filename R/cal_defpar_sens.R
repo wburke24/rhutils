@@ -8,8 +8,12 @@
 #' @param sortby Metric to sort by (NSE, NSElog, PBIAS, RMSE, r2)
 #' @param add_base Add base_flow to streamflow (TRUE/FALSE)
 #' @param def_changes_by_stat Output combined dataframe of parameters and stats (TRUE/FALSE)
+#' @param ... Passed to \code{cal_eval()}, e.g. \code{sim_units = "m"}.
+#' @details Parameter rows and evaluation rows are matched by ParSetID (parameter table column suffix
+#'   \code{ParSetID_<n>} vs. \code{eval$ParSetID}) before the regression. Parameter sets with no
+#'   evaluated output (missing/failed runs) are dropped and reported.
 #' @export
-cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", add_base = T, def_changes_by_stat = F) {
+cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly = F, sortby = "NSE", def_changes_by_stat = F, ...) {
 
   cat("==================== Reading Data ====================\n")
   sortops = c("NSE", "NSElog", "PBIAS", "RMSE", "r2")
@@ -29,6 +33,8 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
 
   defpar_df_t = as.data.frame(t(defpar_df[,c(3:ncol(defpar_df))]))
   names(defpar_df_t) = paste0(defpar_df$Variable,"--", defpar_df$Def_file)
+  # ParSetID of each row (from the ParSetID_<n> column names), kept before any type conversion
+  par_ids = extract_paramset_id(names(defpar_df)[3:ncol(defpar_df)])
 
   par_lens = apply(defpar_df_t,MARGIN = 2, function(X) length(unique(X)))
   if (any(par_lens == 1)) {
@@ -58,12 +64,16 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
   sim_DT = get_basin_daily(out_dir)
   vars = names(sim_DT)[!names(sim_DT) %in% c("day", "month", "year", "basinID", "run", "date", "wy", "yd")]
   if (!"streamflow" %in% vars) stop("Must have streamflow in output.")
-  if ("base_flow" %in% vars & add_base){
-    sim_DT$streamflow = sim_DT$streamflow  + sim_DT$base_flow
-    cat("Adding base_flow to streamflow when calculating eval stats.\n")
+  if (!"base_flow" %in% vars) { 
+    warning("No base_flow in output, so not adding to streamflow for evaluation stats.") 
   }
   cat("\n==================== Calibration Stats ====================\n")
-  eval = cal_eval(Qsim = sim_DT, Qobs = obs_source, monthly = monthly)
+  eval = cal_eval(Qsim = sim_DT, Qobs = obs_source, monthly = monthly, ...)
+
+  # ---- align eval rows to parameter rows by ParSetID ----
+  aligned = align_eval_to_pars(eval, defpar_df_t, par_ids)
+  eval = aligned$eval
+  defpar_df_t = aligned$pars
 
   # cols are stats and params, rows are runs, harder to read this one
   if (def_changes_by_stat) {
@@ -141,4 +151,26 @@ cal_defpar_sens = function(out_dir, obs_source, input_def_pars = NULL, monthly =
   outdf = outdf[order(abs(outdf[,sortnum]), decreasing = T ),]
 
   return(outdf)
+}
+# internal: match eval rows (by eval$ParSetID) to parameter table rows (par_ids), dropping
+# parameter sets that have no evaluation (missing/failed runs) and evaluations with no parameters
+align_eval_to_pars = function(eval, pars, par_ids) {
+  if (length(par_ids) != nrow(pars)) stop("align_eval_to_pars: par_ids must have one entry per parameter row.")
+  if (any(is.na(par_ids))) {
+    stop("Could not get ParSetIDs from the parameter table column names (expected 'ParSetID_<n>').")
+  }
+  if (any(is.na(eval$ParSetID))) stop("Some eval rows have no ParSetID - cannot match evaluations to parameter sets.")
+  idx = match(par_ids, eval$ParSetID)
+  no_eval = par_ids[is.na(idx)]
+  no_pars = setdiff(eval$ParSetID, par_ids)
+  if (length(no_eval) > 0) {
+    warning(length(no_eval), " parameter set(s) have no evaluated output and are omitted from the sensitivity: ParSetID ",
+            paste(no_eval, collapse = ", "), call. = FALSE)
+  }
+  if (length(no_pars) > 0) {
+    warning(length(no_pars), " evaluated run(s) have no matching parameter set and are omitted: ParSetID ",
+            paste(no_pars, collapse = ", "), call. = FALSE)
+  }
+  keep = !is.na(idx)
+  list(eval = eval[idx[keep], ], pars = pars[keep, , drop = FALSE], par_ids = par_ids[keep])
 }

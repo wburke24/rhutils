@@ -1,34 +1,6 @@
 # Calibration utilities
 # except for cal_eval
-# ================================================================================
-#' Save parameter sensitivity tables to a PDF
-#'
-#' @param pars_sens_out List of sensitivity result tables
-#' @param output_path Output PDF path
-#' @param pdfwidth PDF width in inches
-#' @param pdfheight PDF height in inches
-#' @export
-pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_tables.pdf", pdfwidth = 14, pdfheight = 14) {
-  # Use fully qualified calls to avoid search path dependencies
-  pdf(output_path, width = pdfwidth, height = pdfheight)
-  for (i in seq_along(pars_sens_out)) {
-  df <- pars_sens_out[[i]]
-  tbl <- gridExtra::tableGrob(df, rows = NULL)  # no row names
-  # Bold column headers
-    header_gpar <- grid::gpar(fontface = "bold", fill = "#D3D3D3")
-    tbl$grobs[tbl$layout$name == "colhead"] <- lapply(
-      tbl$grobs[tbl$layout$name == "colhead"],
-      function(g) grid::editGrob(g, gp = header_gpar)
-    )
-  title <- grid::textGrob(names(pars_sens_out)[i], gp = grid::gpar(fontsize = 14, fontface = "bold"))
-  # grid.newpage()
-  gridExtra::grid.arrange(title, tbl, ncol = 1, heights = c(0.05, 1))
-  }
-  dev.off()
-  cat("Wrote output tables to pdf:",output_path,"\n")
-}
-# Calibration utilities
-# except for cal_eval
+# (pars_sens_output_tables() is defined once, in defpars_utils.R next to pars_sens())
 
 # ================================================================================
 #' Combine definition changes with evaluation statistics
@@ -58,7 +30,7 @@ def_changes_by_evaldf = function(defpar_df, eval_df, order_by_stat = TRUE, stat 
 
   # new version - use the ParSetID numbers, which are the trailing digits of the defpar_df column names and the value in eval$ParSetID
   # get the ParSetID from the defpar_df column names
-  defpar_parsetIDs = as.numeric(stringr::str_extract(names(defpar_df_pars), "(?<=_)\\d+$"))
+  defpar_parsetIDs = extract_paramset_id(names(defpar_df_pars))
   if (any(is.na(defpar_parsetIDs))) {
     stop("Could not extract ParSetID from defpar_df column names. Column names must end with '_<ParSetID>'.")
   }
@@ -122,37 +94,8 @@ def_changes_by_evaldf = function(defpar_df, eval_df, order_by_stat = TRUE, stat 
 #   return(chgvars_stat)
 # }
 
-# ================================================================================
-#' Compute parameter ranges for top-performing runs
-#'
-#' @param defchg_nse Combined parameter/statistics table
-#' @param pct Quantile threshold used to select runs
-#' @param list Logical; return list instead of data frame
-#' @export
-par_ranges_by_pctle = function(defchg_nse, pct = .90, list = FALSE) {
-  nse = as.numeric(defchg_nse[1,3:ncol(defchg_nse)])
-  pctl = quantile(x = nse, probs = pct)
-  pars = defchg_nse[,3:ncol(defchg_nse)]
-  pars_pctle = pars[,pars[1,] >= pctl]
-  ranges = data.frame(min = as.numeric(apply(pars_pctle,1,min)), max = as.numeric(apply(pars_pctle,1,max)))
-  # signif(ranges, digits = 5)
-  ranges = cbind(Variable = defchg_nse[,1], Def_file = defchg_nse[,2], ranges)
-  cat(pct * 100, "th Percentile NSE - Ranges of Pars\n------------------------------------\n")
-  print(ranges)
-  if (list) {
-    rangeslist = ranges[!ranges$Variable %in% c("NSE", "PBIAS", "NSElog", "RMSE", "R2"),]
-    pars_list = list()
-    for (i in 1:nrow(rangeslist)) {
-      pars_list[[i]] = list(
-        "Def_file" = rangeslist[i, "Def_file"],
-        "Variable" = rangeslist[i, "Variable"],
-        "Value" = c(rangeslist[i, "min"], rangeslist[i, "max"])
-      )
-    }
-    return(pars_list)
-  }
-  return(ranges)
-}
+# par_ranges_by_pctle() was removed (broken: assumed row 1 = NSE, compared character values to a
+# numeric quantile). Use par_ranges_by_stat_pctle() (cal_helpers.R) instead.
 
 # ================================================================================
 # #' @export

@@ -57,7 +57,7 @@ setup_rhessys_folders = function(base_dir) {
 # text and sound alert, inside of collect output
 #' Play a visual and audio alert when simulations complete
 #'
-#' @param txt Message to display (supports multiple lines with \n)
+#' @param txt Message to display (supports multiple lines)
 #' @param fg Foreground ANSI color code
 #' @param bg Background ANSI color code
 #' @param beeptype Type of beep sound (see `beepr::beep` for options)
@@ -243,38 +243,46 @@ AddRunIDtoOutputFilters = function(output_filter, runid) {
   return(output_filter)
 }
 
-#' Find run ID in output directory
+#' Find the run ID (batch ID) of an output directory
+#'
+#' The one RunID parser in rhutils. Looks for "RunID<k>" in the output csv file names
+#' (e.g. "Wardsoil_cal_basin_RunID294_12.csv"), falling back to the directory name
+#' (e.g. "CAL_RunID294_rh_out_..."). Files without a RunID are ignored.
 #'
 #' @param out_dir Output directory path
+#' @param numeric Logical; return the number (294) instead of the string ("RunID294"). Default FALSE.
+#' @return "RunID<k>" (or k if \code{numeric = TRUE}); NA if none or more than one RunID is found.
 #' @export
-find_runID = function(out_dir) {
-  allcsv = list.files(out_dir, ".csv")
-  if (all(grepl("RunID\\d+",allcsv))) {
-    runids = stringr::str_extract(allcsv,"RunID\\d+")
-    if (length(unique(runids)) > 1) {
-      cat("\nMore than 1 runid in  the output for some reason this won't work.\n")
-    } else {
-      cat("\nRun ID:",unique(runids),"\n")
-      return(unique(runids))
-    }
-  } else {
-    cat("\nCouldn't find run ID in the output file names\n")
+find_runID = function(out_dir, numeric = FALSE) {
+  allcsv = list.files(out_dir, "\\.csv$")
+  runids = unique(stats::na.omit(stringr::str_extract(allcsv, "RunID\\d+")))
+  if (length(runids) == 0) {
+    runids = stats::na.omit(stringr::str_extract(basename(normalizePath(out_dir, mustWork = FALSE)), "RunID\\d+"))
+  }
+  if (length(runids) == 0) {
+    cat("\nCouldn't find run ID in the output file names or directory name\n")
     return(NA)
   }
+  if (length(runids) > 1) {
+    warning("More than 1 run ID in ", out_dir, ": ", paste(runids, collapse = ", "), call. = FALSE)
+    return(NA)
+  }
+  cat("\nRun ID:", runids, "\n")
+  if (numeric) {
+    return(as.numeric(sub("RunID", "", runids)))
+  }
+  return(as.character(runids))
 }
 
-#' Extract run ID from filenames
+#' Extract run ID from filenames (deprecated)
 #'
+#' Deprecated - use \code{find_runID()}. Unlike the old version this returns NA (with a warning)
+#' instead of an error when more than one RunID is found.
 #' @param out_dir Output directory path
 #' @export
 ExtractRunID = function(out_dir) {
-  allfiles = list.files(out_dir)
-  allrun = stringr::str_extract(allfiles,"RunID\\d+")
-  run = unique(allrun[!is.na(allrun)])
-  if (length(run) > 1) {
-    stop(paste0("More than 1 run ID found:",run))
-  }
-  return(run)
+  .Deprecated("find_runID", package = "rhutils")
+  find_runID(out_dir)
 }
 
 #

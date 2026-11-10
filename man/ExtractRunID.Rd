@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{ExtractRunID}
 \alias{ExtractRunID}
-\title{Extract run ID from filenames}
+\title{Extract run ID from filenames (deprecated)}
 \usage{
 ExtractRunID(out_dir)
 }
@@ -10,5 +10,6 @@ ExtractRunID(out_dir)
 \item{out_dir}{Output directory path}
 }
 \description{
-Extract run ID from filenames
+Deprecated - use \code{find_runID()}. Unlike the old version this returns NA (with a warning)
+instead of an error when more than one RunID is found.
 }

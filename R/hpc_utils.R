@@ -1,49 +1,50 @@
-# hpc utils
+# hpc utils - DEPRECATED. These functions are superseded by hpc_transfer.R (rh_out_list_flatten,
+# build_rh_input_file_list, test_hpc_ssh, transfer_to_hpc, getHPC) and will be removed in a future version.
 
-#' Format RHESSys run commands for HPC submission
-#'
-#' @param rhout Character vector of RHESSys commands
-#' @param name Label to include in the output filename
-#' @param rh_bin_replace Optional replacement RHESSys binary path
-#' @param prefix_cmd Optional command prefix
-#' @export
-rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL, prefix_cmd = NULL) {
-  #---- for hpc and copying files
-  rhout_str = unlist(rhout)
-  # remove leading 'wsl bash -lc ' if present
-  rhout_str = gsub("^wsl bash -lc ","",rhout_str)
-  # remove leading 'wsl ' if present
-  rhout_str = gsub("^wsl ", "",rhout_str)
-  # remove escaped quotes
-  rhout_str = gsub('\\"',"",rhout_str)
-  # replace rhessys binary path if desired
-  if (!is.null(rh_bin_replace)) {
-    rhout_str = gsub("^.*rhessys\\S+\\s+", paste0(trimws(rh_bin_replace), " "), rhout_str)
-    # rhout_str = gsub("../bin/rhessys\\d{1}.\\d{1}", "/RHESSys/rhessys7.5",rhout_str)
-  }
+# #' Format RHESSys run commands for HPC submission
+# #'
+# #' @param rhout Character vector of RHESSys commands
+# #' @param name Label to include in the output filename
+# #' @param rh_bin_replace Optional replacement RHESSys binary path
+# #' @param prefix_cmd Optional command prefix
+# #' @export
+# rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL, prefix_cmd = NULL) {
+#   #---- for hpc and copying files
+#   rhout_str = unlist(rhout)
+#   # remove leading 'wsl bash -lc ' if present
+#   rhout_str = gsub("^wsl bash -lc ","",rhout_str)
+#   # remove leading 'wsl ' if present
+#   rhout_str = gsub("^wsl ", "",rhout_str)
+#   # remove escaped quotes
+#   rhout_str = gsub('\\"',"",rhout_str)
+#   # replace rhessys binary path if desired
+#   if (!is.null(rh_bin_replace)) {
+#     rhout_str = gsub("^.*rhessys\\S+\\s+", paste0(trimws(rh_bin_replace), " "), rhout_str)
+#     # rhout_str = gsub("../bin/rhessys\\d{1}.\\d{1}", "/RHESSys/rhessys7.5",rhout_str)
+#   }
 
-  # this is to move the -par digit to end of string, otherwise weird errors can happen
-  if (any(!grepl("-par \\d+",rhout_str))) {
-    rhout_str_par = gsub(" -par \\d+","",rhout_str) # get rid of any -pars
-    rhout_str_par = paste0(rhout_str_par," -par ",seq_along(rhout_str_par))
-  } else {
-    # Extract the par digit
-    x_value <- gsub("-par\\s", "", regmatches(rhout_str, regexpr("-par\\s\\d+", rhout_str)))
-    # Extract "-par x" from the input string
-    rhout_str <- gsub("-par\\s\\d+ ", "", rhout_str)
-    # Concatenate the modified input string with "-par x" at the end
-    rhout_str_par <- paste0(rhout_str, " -par ", x_value)
-  }
-  # if theres a prefix command, use bash -c and single quotes to wrap both commands
-  if (!is.null(prefix_cmd)) {
-    rhout_str_par = paste0("bash -c '", trimws(prefix_cmd), " && ", rhout_str_par, "'")
-  }
+#   # this is to move the -par digit to end of string, otherwise weird errors can happen
+#   if (any(!grepl("-par \\d+",rhout_str))) {
+#     rhout_str_par = gsub(" -par \\d+","",rhout_str) # get rid of any -pars
+#     rhout_str_par = paste0(rhout_str_par," -par ",seq_along(rhout_str_par))
+#   } else {
+#     # Extract the par digit
+#     x_value <- gsub("-par\\s", "", regmatches(rhout_str, regexpr("-par\\s\\d+", rhout_str)))
+#     # Extract "-par x" from the input string
+#     rhout_str <- gsub("-par\\s\\d+ ", "", rhout_str)
+#     # Concatenate the modified input string with "-par x" at the end
+#     rhout_str_par <- paste0(rhout_str, " -par ", x_value)
+#   }
+#   # if theres a prefix command, use bash -c and single quotes to wrap both commands
+#   if (!is.null(prefix_cmd)) {
+#     rhout_str_par = paste0("bash -c '", trimws(prefix_cmd), " && ", rhout_str_par, "'")
+#   }
 
-  outfile = paste0("scripts/",name,"_runcmds_",format(Sys.time(), "%Y-%m-%d--%H-%M-%S"),".txt" )
-  writeLines(text = rhout_str_par,con = outfile)
-  cat("Wrote RHESSys cmds to:", outfile)
-  return(outfile)
-}
+#   outfile = paste0("scripts/",name,"_runcmds_",format(Sys.time(), "%Y-%m-%d--%H-%M-%S"),".txt" )
+#   writeLines(text = rhout_str_par,con = outfile)
+#   cat("Wrote RHESSys cmds to:", outfile)
+#   return(outfile)
+# }
 
 #' List RHESSys input files required for a run
 #'
@@ -54,6 +55,7 @@ rhout_write_for_hpc = function(rhout, name, rh_bin_replace = NULL, prefix_cmd = 
 #' @param output_filter Output filter list
 #' @export
 list_rh_input_files = function(input_rhessys, input_hdr, input_def_pars = NULL, input_tec_data, output_filter) {
+  .Deprecated("build_rh_input_file_list", package = "rhutils", msg = "list_rh_input_files() is deprecated (hpc_utils.R is being retired) - use build_rh_input_file_list().")
 
   outlist = list()
   outlist$all_files = NA
@@ -164,6 +166,7 @@ rhessysIO2pronghorn = function(
   transfer_method = "rsync",
   rsa_loc = "~/rsa_key"
 ) {
+  .Deprecated("transfer_to_hpc", package = "rhutils", msg = "rhessysIO2pronghorn() is deprecated (hpc_utils.R is being retired) - use rh_out_list_flatten(), build_rh_input_file_list(), and transfer_to_hpc().")
   # ----- input checks -----
   transfer_method = tolower(transfer_method)
   if (!transfer_method %in% c("scp", "rsync")) {
@@ -337,6 +340,7 @@ rhessysIO2pronghorn = function(
 #' @param filelist Nested list of RHESSys input files
 #' @export
 collapse_rh_input_files_list = function(filelist) {
+  .Deprecated("rh_out_list_flatten", package = "rhutils", msg = "collapse_rh_input_files_list() is deprecated (hpc_utils.R is being retired) - use rh_out_list_flatten() and build_rh_input_file_list().")
   if ((is.list(filelist) & length(filelist)==10) & !is.list(filelist[[1]])) {
     stop("filelist is probably already correctly formatted for hpc functions")
   }
@@ -363,6 +367,7 @@ test_pronghorn_ssh <- function(
   timeout = 10,
   remote_cmd = "echo ok"
 ) {
+  .Deprecated("test_hpc_ssh", package = "rhutils", msg = "test_pronghorn_ssh() is deprecated (hpc_utils.R is being retired) - use test_hpc_ssh().")
   cmd <- "wsl"
   args <- c(
     "ssh",

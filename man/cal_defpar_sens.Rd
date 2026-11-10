@@ -10,8 +10,8 @@ cal_defpar_sens(
   input_def_pars = NULL,
   monthly = F,
   sortby = "NSE",
-  add_base = T,
-  def_changes_by_stat = F
+  def_changes_by_stat = F,
+  ...
 )
 }
 \arguments{
@@ -25,10 +25,17 @@ cal_defpar_sens(
 
 \item{sortby}{Metric to sort by (NSE, NSElog, PBIAS, RMSE, r2)}
 
-\item{add_base}{Add base_flow to streamflow (TRUE/FALSE)}
-
 \item{def_changes_by_stat}{Output combined dataframe of parameters and stats (TRUE/FALSE)}
+
+\item{...}{Passed to \code{cal_eval()}, e.g. \code{sim_units = "m"}.}
+
+\item{add_base}{Add base_flow to streamflow (TRUE/FALSE)}
 }
 \description{
 Sensetivity of of calibration evaluation statistics (NSE, NSElog, PBIAS, RMSE, r2) to changes in defintion file parameters.
+}
+\details{
+Parameter rows and evaluation rows are matched by ParSetID (parameter table column suffix
+  \code{ParSetID_<n>} vs. \code{eval$ParSetID}) before the regression. Parameter sets with no
+  evaluated output (missing/failed runs) are dropped and reported.
 }

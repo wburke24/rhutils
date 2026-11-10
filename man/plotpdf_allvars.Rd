@@ -14,13 +14,15 @@ plotpdf_allvars(
   worldfile = NULL,
   pdfwidth = 10,
   pdfheight = 7,
-  hide_legend = F,
-  summary_plots = F,
-  output_images = F,
+  hide_legend = FALSE,
+  summary_plots = FALSE,
+  output_pdf = TRUE,
+  output_images = FALSE,
+  return_plots = FALSE,
   run_limit = 25,
-  auto_vars = T,
+  auto_vars = TRUE,
   runs = NULL,
-  normalize_yearly = F
+  normalize_yearly = FALSE
 )
 }
 \arguments{
@@ -46,11 +48,19 @@ plotpdf_allvars(
 
 \item{summary_plots}{TRUE/FALSE if data should be summarised instead of individual runs.}
 
+\item{output_pdf}{TRUE/FALSE if the main pdf should be written. Default is TRUE. Set to FALSE along with output_images = FALSE and return_plots = TRUE to only return the plot list.}
+
+\item{output_images}{TRUE/FALSE if individual pngs should be output in addition to the pdf. PNGs are written to a folder next to the pdf, named like the pdf with an '_images' suffix. Default is FALSE.}
+
+\item{return_plots}{TRUE/FALSE if ggplot objects should be returned (invisibly) as a named list, one per variable. Default is FALSE, in which case NULL is returned invisibly.}
+
 \item{run_limit}{Number of runs which automatically trigger summary statistics instead of individual run plots.}
 
 \item{auto_vars}{TRUE/FALSE to automatically generate relevent variables: evapotranspiration}
 
 \item{runs}{Optional vector of run IDs, to subset the total dataset. Defaults to NULL. May not work}
+
+\item{normalize_yearly}{TRUE/FALSE if yearly data should be normalized. Default is FALSE. Uses 365.25 days per year for normalization. NOTE: add usage of 'length' var in future}
 }
 \description{
 Reads, aggregates, and plots all output variables to a pdf. Assumes output using output filters. Optionally can aggregate, create summary statistics, hide legend. Uses a pattern input to select one or many csv outputs in an output directory. Currently designed to work with basin scale output.

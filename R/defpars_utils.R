@@ -2,24 +2,11 @@
 
 #  Read - Write ================================================================================
 
-#' Read a definition file
-#'
-#' @param def_file Path to a RHESSys definition file
-#' @param no_comments Logical; if TRUE, exclude comments from the output
+# read_def() now lives in RHESSysIOinR (the single def file parser, also used by change_def_file
+# and check_params) and is re-exported here so rhutils::read_def() keeps working.
+#' @importFrom RHESSysIOinR read_def
 #' @export
-read_def = function(def_file, no_comments = TRUE) {
-  def_read = readLines(def_file, warn = FALSE)
-  def_read = def_read[nchar(def_read) > 0]
-  def_table_list =  strsplit(trimws(def_read), "\\s+")
-  def_table <- as.data.frame(do.call(rbind, lapply(def_table_list, `length<-`, 2)), stringsAsFactors = FALSE)
-  names(def_table)[1:2] = c("Value", "Name")
-  comments = lapply(def_table_list, function(x)ifelse(length(x) > 2, paste(x[3:length(x)], collapse = " "), NA ) )
-  def_table_out = data.frame(def_table, comments = unlist(comments))
-  if (no_comments) {
-    def_table_out = def_table_out[, c("Value", "Name")]
-  }
-  return(def_table_out)
-}
+RHESSysIOinR::read_def
 
 # ================================================================================
 # THIS DOES EVERYTHING NOW - READS TABLE, FINDS TABLE IN OUTPUT FOLDER, CONVERTS TO LIST
@@ -181,15 +168,15 @@ copy_param_by_var = function(pars, copy_var, replace_var) {
 
 # ================================================================================
 # remove duplicate def list entry
-#' Remove duplicate definition parameters
+#' Remove duplicate definition parameters (keeps the LAST)
 #'
+#' Wrapper around \code{RHESSysIOinR::def_pars_rm_dup()}: for each duplicated Def_file + Variable,
+#' the last entry is kept (same as \code{change_def_file()}) and the kept/removed values are reported.
 #' @param def_list List of definition parameters
+#' @param verbose Print the kept/removed report (default TRUE)
 #' @export
-defpar_rm_dup = function(def_list) {
-  pars = paste0(sapply(def_list, "[[",1), "-", sapply(def_list, "[[",2))
-  pars[duplicated(pars)]
-  def_list[duplicated(pars)] = NULL
-  return(def_list)
+defpar_rm_dup = function(def_list, verbose = TRUE) {
+  RHESSysIOinR::def_pars_rm_dup(def_list, verbose = verbose)
 }
 
 # ================================================================================
@@ -254,17 +241,17 @@ get_only_varied_defpars_list = function(defpars) {
 
 # ================================================================================
 # get new parlist based on id/num of existing par list
-#' Extract parameters by run number
+#' Extract parameters by ParSet ID number
 #'
 #' @param pars_list List of definition parameters
-#' @param runnum Run identifier
+#' @param ParSetID ParSet ID number
 #' @export
-defpar_extract_byrunnum = function(pars_list, runnum) {
+defpar_extract_by_ParSetID = function(pars_list, ParSetID) {
   extfun = function(X,Y) {
     X[[3]] = X[[3]][Y]
     return(X)
   }
-  newparlist = lapply(pars_list,extfun,runnum)
+  newparlist = lapply(pars_list,extfun,ParSetID)
   return(newparlist)
 }
 
@@ -279,15 +266,15 @@ get_def_par = function(def_file, parameter = NULL) {
   tmp = read_def(def_file)
   if (is.null(parameter)) {
     cat("No parameter indicated, parameters in def file:\n")
-    print(tmp$names)
-    return(tmp$names)
+    print(tmp$Name)
+    return(tmp$Name)
   }
-  if (sum(tmp$names == parameter) == 0) {
+  if (sum(tmp$Name == parameter) == 0) {
     cat("No parameter in file matching '",parameter,"'. Parameters in def file:\n")
-    print(tmp$names)
+    print(tmp$Name)
     return(NULL)
   }
-  parval = tmp[tmp$names == parameter,"pars"]
+  parval = tmp[tmp$Name == parameter, "Value"]
   return(parval)
 }
 # ================================================================================
@@ -302,14 +289,14 @@ make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
   # defaults = "~/Repos/RHESSys-develop/rhessys/init/construct_stratum_defaults.c"
   def = read_def(def_file)
 
-  if (!all(parameters %in% def$names)) {
+  if (!all(parameters %in% def$Name)) {
     cat("Not all parameters found in def file, using defaults if supplied.\n")
-    parameters_in_def = parameters[parameters %in% def$names]
+    parameters_in_def = parameters[parameters %in% def$Name]
     par_vals = mapply(get_def_par, def_file, parameters_in_def, USE.NAMES = F)
     param_df = data.frame(Variable = parameters_in_def, Value = par_vals)
 
     if (!is.null(defaults)) {
-      missing_pars = parameters[!parameters %in% def$names]
+      missing_pars = parameters[!parameters %in% def$Name]
       allpars = check_params(rh_file = defaults, def_file = def_file)
       if (!all(missing_pars %in% allpars$Name)) {
         cat("Not all missing parameters found in defaults - likely invalid.\n")
@@ -320,7 +307,7 @@ make_par_list_from_def_file = function(def_file, parameters, defaults = NULL) {
       param_df = rbind(param_df, missing_par_df)
     } else {
       cat("No defaults supplied, using only parameters found in def_file.\n")
-      # parameters = parameters[parameters %in% def$names]
+      # parameters = parameters[parameters %in% def$Name]
     }
   } else {
     par_vals = mapply(get_def_par, def_file, parameters, USE.NAMES = F)
@@ -447,8 +434,8 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
   setDT(sim_DT)
   # CHECK INPUTS
   if (nrow(defpar_df_t) != length(unique(sim_DT$run))) {
-    defrunids = stringr::str_extract(row.names(defpar_df_t),"\\d+")
-    simrunids = stringr::str_extract(unique(sim_DT$run),"\\d+$")
+    defrunids = extract_paramset_id(row.names(defpar_df_t))
+    simrunids = extract_paramset_id(unique(sim_DT$run))
     cat("Defpar runs not found in output data:", defrunids[!defrunids %in% simrunids], "\n")
     cat("Output runs not found in defpar data:",simrunids[!simrunids %in% defrunids],"\n")
     if (omit_mising_data) {
@@ -467,7 +454,7 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
         # rowsremovesim = which(simrunids %in% removesim)
         # sum(stringr::str_detect(sim_DT$run,paste0("100","$")))
         cat("Removing the data without matching parameter data, this may not work \n")
-        sim_DT = sim_DT[simrunidsall %in% defrunids,]
+        sim_DT = sim_DT[extract_paramset_id(sim_DT$run) %in% defrunids,]
 
       }
     } else {
@@ -500,11 +487,11 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
   min = sim_DT[, lapply(.SD, function(x) min = min(x, na.rm = TRUE)), by = run, .SDcols = vars]
   max = sim_DT[, lapply(.SD, function(x) max = max(x, na.rm = TRUE)), by = run, .SDcols = vars]
   # ASSUME RUN ENDS WITH RUN NUMBER
-  mean$run_num = as.numeric(stringr::str_extract(mean$run,"(?<=_)\\d+$"))
+  mean$run_num = extract_paramset_id(mean$run)
   mean = mean[order(mean$run_num),]
-  min$run_num = as.numeric(stringr::str_extract(min$run,"(?<=_)\\d+$"))
+  min$run_num = extract_paramset_id(min$run)
   min = min[order(min$run_num),]
-  max$run_num = as.numeric(stringr::str_extract(max$run,"(?<=_)\\d+$"))
+  max$run_num = extract_paramset_id(max$run)
   max = max[order(max$run_num),]
   # Compute annual max and min per run and year
   an_max = sim_DT[, lapply(.SD, function(x) annual_max = max(x, na.rm = TRUE)), by = .(run, year), .SDcols = vars]
@@ -512,9 +499,9 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
   an_min = sim_DT[, lapply(.SD, function(x) annual_min = min(x, na.rm = TRUE)), by = .(run, year), .SDcols = vars]
   avg_an_min = an_min[, lapply(.SD, function(x) avg_annual_min = mean(x, na.rm = TRUE)), by = .(run), .SDcols = vars]
 
-  avg_an_max$run_num = as.numeric(stringr::str_extract(avg_an_max$run,"(?<=_)\\d+$"))
+  avg_an_max$run_num = extract_paramset_id(avg_an_max$run)
   avg_an_max = avg_an_max[order(avg_an_max$run_num),]
-  avg_an_min$run_num = as.numeric(stringr::str_extract(avg_an_min$run,"(?<=_)\\d+$"))
+  avg_an_min$run_num = extract_paramset_id(avg_an_min$run)
   avg_an_min = avg_an_min[order(avg_an_min$run_num),]
   
   testing = F
@@ -618,6 +605,12 @@ pars_sens = function(out_dir, input_def_pars, sortby = "Mean", omit_mising_data 
 }
 
 # output the pars sens
+#' Save parameter sensitivity tables to a PDF
+#'
+#' @param pars_sens_out List of sensitivity result tables (e.g. from \code{pars_sens()})
+#' @param output_path Output PDF path
+#' @param pdfwidth PDF width in inches
+#' @param pdfheight PDF height in inches
 #' @export
 pars_sens_output_tables = function(pars_sens_out, output_path = "pars_sens_tables.pdf", pdfwidth = 14, pdfheight = 14) {
   # grid and gridExtra functions accessed via ::

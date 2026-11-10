@@ -12,9 +12,13 @@
 #' @param pdfheight Height for output pdf in inches.
 #' @param hide_legend TRUE/FALSE if legend should be hidden in output plot.
 #' @param summary_plots TRUE/FALSE if data should be summarised instead of individual runs. 
+#' @param output_pdf TRUE/FALSE if the main pdf should be written. Default is TRUE. Set to FALSE along with output_images = FALSE and return_plots = TRUE to only return the plot list.
+#' @param output_images TRUE/FALSE if individual pngs should be output in addition to the pdf. PNGs are written to a folder next to the pdf, named like the pdf with an '_images' suffix. Default is FALSE.
+#' @param return_plots TRUE/FALSE if ggplot objects should be returned (invisibly) as a named list, one per variable. Default is FALSE, in which case NULL is returned invisibly.
 #' @param run_limit Number of runs which automatically trigger summary statistics instead of individual run plots.
 #' @param auto_vars TRUE/FALSE to automatically generate relevent variables: evapotranspiration
 #' @param runs Optional vector of run IDs, to subset the total dataset. Defaults to NULL. May not work
+#' @param normalize_yearly TRUE/FALSE if yearly data should be normalized. Default is FALSE. Uses 365.25 days per year for normalization. NOTE: add usage of 'length' var in future 
 #' 
 #' @export
 
@@ -27,13 +31,15 @@ plotpdf_allvars = function(out_dir,
                            worldfile = NULL, # optional worldfile for veg ID spatial aggregation, required if spatial_agg is not null
                            pdfwidth = 10,
                            pdfheight = 7,
-                           hide_legend = F,
-                           summary_plots = F,
-                           output_images = F, # if TRUE, also outputs a foldfer of individual pngs for each variable in addition to the pdf
+                           hide_legend = FALSE,
+                           summary_plots = FALSE,
+                           output_pdf = TRUE, # if FALSE, the main pdf is not written
+                           output_images = FALSE, # if TRUE, also outputs a foldfer of individual pngs for each variable in addition to the pdf
+                           return_plots = FALSE,
                            run_limit = 25,
-                           auto_vars = T,
+                           auto_vars = TRUE,
                            runs = NULL,
-                           normalize_yearly = F
+                           normalize_yearly = FALSE
                           ) {
   
   # =========================== CHECKS ========================================
@@ -59,8 +65,8 @@ plotpdf_allvars = function(out_dir,
   names = gsub(pattern = pattern, "",basename(files_in))
   names = gsub(".csv","",names)
 
-  if (!dir.exists(out_path)) {
-    dir.create(out_path)
+  if ((output_pdf || output_images) && !dir.exists(out_path)) {
+    dir.create(out_path, recursive = TRUE)
     cat("Created output plot folder at path:", out_path,".\n")
   }
 
@@ -165,7 +171,16 @@ plotpdf_allvars = function(out_dir,
   
   # ======================================== PLOT & WRITE TO PDF ========================================
   pdfname = file.path(out_path, paste0(gsub(".pdf","", out_name),"_", format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".pdf"  ) )
-  pdf(pdfname, width = pdfwidth, height = pdfheight)
+  if (output_pdf) {
+    pdf(pdfname, width = pdfwidth, height = pdfheight)
+  }
+
+  # folder for individual pngs (named after the pdf, without extension)
+  if (output_images) {
+    img_dir = sub("\\.pdf$", "_images", pdfname)
+    dir.create(img_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+  plot_list = list()
 
   # ======================================== VAR LISTS - FOR CONVERSIONS AND LABELS ========================================
   # hydro vars to convert to mm
@@ -337,12 +352,41 @@ plotpdf_allvars = function(out_dir,
     }
 
     # ==================== PLOT TO PDF ====================
-    plot(tmpplot)
+    if (output_pdf) {
+      plot(tmpplot)
     }
-  
-  # ==================== STOP GRAPHICAL OUTPUT TO PDF ====================
-  suppressMessages(dev.off())
 
-  cat("Wrote plots to PDF file: ",pdfname)
+    # ==================== OPTIONAL PNG OUTPUT ====================
+    if (output_images) {
+      safe_name = gsub("[^A-Za-z0-9._-]", "_", vars[i])
+      ggplot2::ggsave(
+        filename = file.path(img_dir, paste0(safe_name, ".png")),
+        plot = tmpplot,
+        width = pdfwidth,
+        height = pdfheight,
+        dpi = 150,
+        bg = "white"
+      )
+    }
+
+    # ==================== OPTIONAL RETURN LIST ====================
+    if (return_plots) {
+      plot_list[[vars[i]]] = tmpplot
+    }
+  }
+
+  # ==================== STOP GRAPHICAL OUTPUT TO PDF ====================
+  if (output_pdf) {
+    suppressMessages(dev.off())
+    cat("Wrote plots to PDF file: ",pdfname,"\n")
+  }
+  if (output_images) {
+    cat("Wrote individual pngs to folder: ", img_dir, "\n")
+  }
+
+  if (return_plots) {
+    return(invisible(plot_list))
+  }
+  invisible(NULL)
 }
   

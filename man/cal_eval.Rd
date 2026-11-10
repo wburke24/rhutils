@@ -11,13 +11,18 @@ cal_eval(
   plot_path = "plots",
   plot_name = "cal_plots",
   monthly = F,
-  echo_best = T
+  both = F,
+  echo_best = T,
+  sim_units = c("auto", "m", "mm"),
+  add_base = TRUE,
+  sort_by_nse = FALSE,
+  log_eps = 1e-06
 )
 }
 \arguments{
-\item{Qsim}{Simulated streamflow data or path to file}
+\item{Qsim}{Simulated streamflow data (e.g. from \code{get_basin_daily()}) or path to an output directory}
 
-\item{Qobs}{Observed streamflow data or path to file}
+\item{Qobs}{Observed streamflow data, or path to file. Needs columns \code{Date} (class Date) and \code{Flow_mmd} (mm/day).}
 
 \item{plots}{Plot observed vs simulated (TRUE/FALSE)}
 
@@ -27,9 +32,30 @@ cal_eval(
 
 \item{monthly}{Use monthly aggregation (TRUE/FALSE)}
 
+\item{both}{Ignored (kept for backwards compatibility); call once with \code{monthly = FALSE} and once with \code{TRUE}.}
+
 \item{echo_best}{Echo best run by NSE (TRUE/FALSE)}
+
+\item{sim_units}{Units of simulated streamflow: "auto" (default, backwards compatible), "m" (converted to mm;
+output-filter basin streamflow is in m), or "mm" (no conversion).
+"auto" treats it as m if the max over all runs in the overlap period is < 1, which can be wrong in dry basins.}
+
+\item{add_base}{Add \code{base_flow} to \code{streamflow} if present (default TRUE).}
+
+\item{sort_by_nse}{Return rows sorted by NSE (best first) instead of by ParSetID (default FALSE).}
+
+\item{log_eps}{Constant added before taking logs for NSElog (default 1e-6).}
+}
+\value{
+data.table with columns \code{run, NSE, NSElog, PBIAS, RMSE, R2, ParSetID, n} (n = days/months used).
 }
 \description{
-Takes either the paths to simulated and observed streamflow, or the dataframes/datatables themselves, and calculates
-nse, lognse, pbias, rmse, and r2, at either daily or monthly. Requires get_basin_daily from rhutils and the datatable packges.
+Streamflow calibration statistics (NSE, NSElog, PBIAS, RMSE, R2) for every run in an output directory or
+simulated data table, against observed streamflow, daily or monthly. A streamflow-specific wrapper around
+\code{cal_eval_generic()}: adds \code{base_flow} to \code{streamflow}, handles units, then pairs simulated
+and observed values by date (join, not position) and computes the metrics.
+}
+\details{
+Results are returned in \strong{ParSetID order} so they line up row-for-row with parameter tables
+(e.g. \code{defpars_list2df()}). Use \code{sort_by_nse = TRUE}, or \code{eval[order(-eval$NSE), ]}, for a ranked table.
 }

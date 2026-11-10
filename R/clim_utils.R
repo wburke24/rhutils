@@ -53,3 +53,51 @@ clim_repeat = function(clim, file, n, units = "years") {
   }
 
 }
+
+#' Plot climate data
+#' 
+#' @param clim_src Path to climate file
+#' @param dest Path to save the plot
+#' @param water_year Logical, whether to aggregate by water year
+#' @export
+plot_clim = function(clim_src, dest = "clim/clim_plot.png", water_year = TRUE) {
+  clim = read_clim(clim_src)
+  clim$date = as.POSIXct(clim$date)
+
+  if (water_year) {
+    clim_wy = aggregate(cbind(rain, tmin, tmax) ~ wy, data = clim, FUN = mean)
+    clim_wy$rain = clim_wy$rain * 365.25 * 1000
+    # find the scale factor to put the temperature on the same scale as precipitation
+    scale = max(clim_wy$rain) / max(clim_wy$tmax)
+    p = ggplot(clim_wy, aes(x = wy)) +
+      geom_line(aes(y = rain, color = "Precipitation (mm)")) +
+      geom_line(aes(y = tmin * scale, color = "Min Air Temperature (C)")) +
+      geom_line(aes(y = tmax * scale, color = "Max Air Temperature (C)")) +
+      scale_y_continuous(
+        name = "Total Precipitation (mm)",
+        sec.axis = sec_axis(~ ./scale, name = "Daily Air Temperature (C)")
+      ) +
+      labs(title = paste("Annual Climate Data from", clim_src), x = "Date") +
+      theme_minimal() +
+      theme(legend.position = "bottom")
+    p
+
+  } else {
+    clim$rain = clim$rain * 1000
+    scale = max(clim$rain) / max(clim$tmax)
+    p = ggplot(clim, aes(x = date)) +
+      geom_line(aes(y = tmin * scale, color = "Min Air Temperature (C)"), alpha = 0.5) +
+      geom_line(aes(y = tmax * scale, color = "Max Air Temperature (C)"), alpha = 0.5) +
+      geom_line(aes(y = rain, color = "Precipitation (mm)")) +
+      scale_y_continuous(
+        name = "Precipitation (mm)",
+        sec.axis = sec_axis(~ ./scale, name = "Air Temperature (C)")
+      ) +
+      labs(title = paste("Daily Climate Data from", clim_src), x = "Date") +
+      theme_minimal() +
+      theme(legend.position = "bottom")
+    p
+  }
+  
+  ggsave(dest, plot = p, width = 10, height = 6)
+}

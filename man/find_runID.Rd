@@ -2,13 +2,20 @@
 % Please edit documentation in R/utils.R
 \name{find_runID}
 \alias{find_runID}
-\title{Find run ID in output directory}
+\title{Find the run ID (batch ID) of an output directory}
 \usage{
-find_runID(out_dir)
+find_runID(out_dir, numeric = FALSE)
 }
 \arguments{
 \item{out_dir}{Output directory path}
+
+\item{numeric}{Logical; return the number (294) instead of the string ("RunID294"). Default FALSE.}
+}
+\value{
+"RunID<k>" (or k if \code{numeric = TRUE}); NA if none or more than one RunID is found.
 }
 \description{
-Find run ID in output directory
+The one RunID parser in rhutils. Looks for "RunID<k>" in the output csv file names
+(e.g. "Wardsoil_cal_basin_RunID294_12.csv"), falling back to the directory name
+(e.g. "CAL_RunID294_rh_out_..."). Files without a RunID are ignored.
 }

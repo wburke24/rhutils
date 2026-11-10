@@ -13,20 +13,28 @@
   }
   
   tmp <- read.table(base_station_file)
+
   clim_base <- tmp$V1[tmp$V2 == "climate_prefix"]
+  nc_tmin = tmp$V1[tmp$V2 == "netcdf_tmin_filename"]
   
-  if (length(clim_base) == 0) {
-    warning("No climate_prefix found in basestation file: ", base_station_file)
+  if (length(clim_base) == 0 && length(nc_tmin) == 0) {
+    warning("No climate_prefix or netcdf_tmin_filename found in basestation file: ", base_station_file)
     return(character())
   }
-  
-  opts <- c(".rain", ".tmin", ".tmax", ".tavg", ".dayl", ".daytime_rain_duration",
+  if (length(clim_base) > 0) {
+      opts <- c(".rain", ".tmin", ".tmax", ".tavg", ".dayl", ".daytime_rain_duration",
             ".LAI_scalar", ".Ldown", ".Kdown_direct", ".Kdown_diffuse", ".ndep_NO3", ".ndep_NH4",
             ".PAR_direct", ".PAR_diffuse", ".relative_humidity", ".tday", ".tnightmax", ".tsoil",
             ".vpd", ".wind", ".CO2", ".lapse_rate_tmin", ".lapse_rate_tmax", ".tdewpoint")
   
-  clim_files <- paste0(clim_base, opts)
-  clim_files[file.exists(clim_files)]
+    clim_files <- paste0(clim_base, opts)
+    return(clim_files[file.exists(clim_files)])
+  }
+  if (length(nc_tmin) > 0) {
+    nc_files <- unique(tmp$V1[grepl("\\.nc$", tmp$V1)])
+    return(nc_files[file.exists(nc_files)])
+  }
+
 }
 
 #' Build a comprehensive RHESSys input file list
@@ -158,8 +166,10 @@ build_rh_input_file_list <- function(
 #' @param name Label to include in the output filename
 #' @param rh_bin_replace Optional replacement RHESSys binary path
 #' @param prefix_cmd Optional command prefix
+#' @param cmd_file_path Character. Directory and/or base filename for output commands file. If only a directory (ends with "/"), name will be used. Datetime will be appended to prevent overwriting. Default: "scripts/runcmds/" (creates scripts/runcmds/name_runcmds_TIMESTAMP.txt)
 #' @export
-rhout_write_for_hpc <- function(rhout, name, rh_bin_replace = NULL, prefix_cmd = NULL) {
+
+rhout_write_for_hpc <- function(rhout, name, rh_bin_replace = NULL, prefix_cmd = NULL, cmd_file_path = "scripts/runcmds/") {
   # Standardize input format
   rhout_str <- unlist(rhout)
   
@@ -192,11 +202,28 @@ rhout_write_for_hpc <- function(rhout, name, rh_bin_replace = NULL, prefix_cmd =
     rhout_str <- paste0("bash -c '", trimws(prefix_cmd), " && ", rhout_str, "'")
   }
   
-  # Write to output file
-  outfile <- paste0(
-    "scripts/", name, "_runcmds_",
-    format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".txt"
-  )
+  # Determine output file path
+  if (endsWith(cmd_file_path, "/")) {
+    # cmd_file_path is a directory
+    base_filename <- paste0(name, "_runcmds")
+    outfile <- paste0(
+      cmd_file_path, base_filename, "_",
+      format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".txt"
+    )
+  } else {
+    # cmd_file_path includes a filename (with or without directory)
+    outfile <- paste0(
+      cmd_file_path, "_",
+      format(Sys.time(), "%Y-%m-%d--%H-%M-%S"), ".txt"
+    )
+  }
+  
+  # Create directory if needed
+  outdir <- dirname(outfile)
+  if (!dir.exists(outdir)) {
+    dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+  }
+  
   writeLines(text = rhout_str, con = outfile)
   cat("Wrote RHESSys commands to:", outfile, "\n")
   
@@ -218,9 +245,9 @@ rhout_write_for_hpc <- function(rhout, name, rh_bin_replace = NULL, prefix_cmd =
 #' @param prefix_cmd Optional command to execute before RHESSys (e.g., loading modules)
 #' @param transfer_method File transfer method: "rsync" (default, faster) or "scp" (backup)
 #' @param ssh_key Path to SSH private key (default: "~/rsa_key")
-#' @param submit_job Logical; if TRUE, submits the run script to HPC job scheduler
-#'   after file transfer (requires run script at remote location)
+#' @param submit_job Logical; if TRUE, submits the run script to HPC job scheduler after file transfer (requires run script at remote location)
 #' @param job_script Remote path to job submission script (e.g., "./scripts/run_dyn_omp.sh")
+#' @param cmd_file_path Character. Directory and/or base filename for command file. If only a directory (ends with "/"), name will be used. Datetime will be appended to prevent overwriting. Default: "scripts/" creates scripts/name_runcmds_TIMESTAMP.txt
 #'
 #' @return Character vector containing path(s) to remote run command file(s)
 #'
@@ -246,7 +273,8 @@ transfer_to_hpc <- function(
   transfer_method = "rsync",
   ssh_key = "~/rsa_key",
   submit_job = FALSE,
-  job_script = NULL
+  job_script = NULL,
+  cmd_file_path = "scripts/runcmds/"
 ) {
   # -------- Input validation --------
   transfer_method <- tolower(transfer_method)
@@ -267,7 +295,8 @@ transfer_to_hpc <- function(
     rh_commands,
     name,
     rh_bin_replace = rhessys_binary_remote,
-    prefix_cmd = prefix_cmd
+    prefix_cmd = prefix_cmd,
+    cmd_file_path = cmd_file_path
   )
   
   # -------- Standardize file list structure --------
@@ -426,4 +455,23 @@ test_hpc_ssh <- function(
     status = status,
     output = out
   )
+}
+
+#' Retrieve output files from HPC after RHESSys run
+#'
+#' @param usr Remote user@host string
+#' @param dest Remote destination directory where output files are located
+#' @param ssh_key Path to SSH private key (default: "~/rsa_key")
+#' @param collect_output_script Path to remote script that collects output files (default: "./scripts/collect_output.sh")
+#' @return Path to local directory where output files were saved
+#' @export
+
+getHPC = function(usr, dest, ssh_key = "~/rsa_key", collect_output_script = "./scripts/collect_output.sh") {
+  gethpcout <- paste0("wsl ssh -i ", ssh_key, " ", usr, " ","\"cd ",dest," && ", collect_output_script, "\"")
+  cmdout = system(gethpcout,intern = T)
+  hpcoutdir = gsub("Output CSVs moved to ","", cmdout[startsWith(cmdout, "Output CSVs moved to ")])
+  rsync_cmd = paste0("wsl rsync -avz -e \"ssh -i ", ssh_key, "\" ",usr,":", hpcoutdir," ./output/")
+  system(rsync_cmd)
+  out_dir = paste0("output/",basename(hpcoutdir))
+  return(out_dir)
 }

@@ -14,7 +14,7 @@ sim_alert(
 )
 }
 \arguments{
-\item{txt}{Message to display (supports multiple lines with \n)}
+\item{txt}{Message to display (supports multiple lines)}
 
 \item{fg}{Foreground ANSI color code}
 
