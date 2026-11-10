@@ -17,7 +17,7 @@ cal_eval_generic(
   obs_is_monthly = F,
   echo_best = T,
   agg_by = "mean",
-  log_eps = 1e-06,
+  log_eps = 0.000001,
   sort_by_nse = FALSE
 )
 }

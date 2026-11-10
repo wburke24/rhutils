@@ -16,7 +16,7 @@ cal_eval(
   sim_units = c("auto", "m", "mm"),
   add_base = TRUE,
   sort_by_nse = FALSE,
-  log_eps = 1e-06
+  log_eps = 0.000001
 )
 }
 \arguments{
